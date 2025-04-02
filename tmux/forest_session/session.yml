@@ -5,7 +5,7 @@ socket_name: mrs
 attach: false
 tmux_options: -f /etc/ctu-mrs/tmux.conf
 # you can modify these
-pre_window: export UAV_NAME=uav1; export RUN_TYPE=simulation; export UAV_TYPE=f330
+pre_window: export UAV_NAME=uav1; export RUN_TYPE=simulation; export UAV_TYPE=f450
 startup_window: monodepth
 windows:
   - roscore:
@@ -16,7 +16,7 @@ windows:
       layout: tiled
       panes:
         - waitForRos; roslaunch mrs_uav_gazebo_simulation simulation.launch world_name:=forest gui:=true
-        - waitForGazebo; rosservice call /mrs_drone_spawner/spawn "1 --$UAV_TYPE --enable-vio"
+        - waitForGazebo; rosservice call /mrs_drone_spawner/spawn "1 --$UAV_TYPE --enable-vio --enable-realsense-front"
         - waitForOdometry; gz camera -c gzclient_camera -f $UAV_NAME; history -s gz camera -c gzclient_camera -f $UAV_NAME
   - status:
       layout: tiled
@@ -38,6 +38,16 @@ windows:
           custom_config:=./config/custom_config.yaml
           world_config:=./config/world_config.yaml
           network_config:=./config/network_config.yaml
+  - VINS:
+      layout: tiled
+      panes:
+        # -  waitForOdometry; roslaunch vins_estimator simulation_fisheye.launch
+        -  waitForOdometry; roslaunch ov_repub simulation_bluefox2.launch
+  - VINS_republisher:
+      layout: tiled
+      panes:
+        -  waitForOdometry; roslaunch vins_republisher2 vins_republisher_openvins_bluefox.launch
+        # -  waitForOdometry; roslaunch vins_republisher vins_republisher.launch
   - takeoff:
       layout: tiled
       panes:
