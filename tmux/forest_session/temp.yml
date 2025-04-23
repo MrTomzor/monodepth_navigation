@@ -18,8 +18,8 @@ windows:
       layout: tiled
       panes:
         - waitForRos; roslaunch mrs_uav_gazebo_simulation simulation.launch world_name:=forest gui:=true
-        - waitForGazebo; rosservice call /mrs_drone_spawner/spawn "1 --$UAV_TYPE --enable-vio --enable-realsense-front --pos 0 0 2.5 0"
-        - waitForControl; gz camera -c gzclient_camera -f $UAV_NAME; history -s gz camera -c gzclient_camera -f $UAV_NAME
+        - waitForGazebo; rosservice call /mrs_drone_spawner/spawn "1 --$UAV_TYPE --enable-vio --enable-realsense-front --pos 0 0 1.5 1.57"
+        - waitForOdometry; gz camera -c gzclient_camera -f $UAV_NAME; history -s gz camera -c gzclient_camera -f $UAV_NAME
   - status:
       layout: tiled
       panes:
@@ -41,27 +41,20 @@ windows:
           world_config:=./config/world_config.yaml
           network_config:=./config/network_config.yaml
   - VINS:
-      layout: tiled
-      panes:
-        - waitForHw; roslaunch ov_repub simulation_bluefox.launch
+    layout: tiled
+    panes:
+      - waitForOdometry; roslaunch ov_repub simulation_bluefox.launch
 
   - VINS_republisher:
       layout: tiled
       panes:
-        - waitForHw; roslaunch vins_republisher vins_republisher_openvins_bluefox.launch
+        - waitForOdometry; roslaunch vins_republish vins_republisher_openvins_bluefox.launch
 
   - takeoff:
       layout: tiled
       panes:
         - waitForHw; roslaunch mrs_uav_autostart automatic_start.launch
-        - waitForControl; rosservice call /$UAV_NAME/hw_api/arming 1; sleep 2; rosservice call /$UAV_NAME/hw_api/offboard
-  
-  # - takeoff:
-  #   layout: tiled
-  #   panes:
-  #     - waitForHw; roslaunch mrs_uav_autostart automatic_start.launch
-  #     - 'rostopic wait /$UAV_NAME/vio/odom; rosservice call /$UAV_NAME/hw_api/arming 1; sleep 2; rosservice call /$UAV_NAME/hw_api/offboard'
-
+        - 'waitForOdometry; rosservice call /$UAV_NAME/hw_api/arming 1; sleep 2; rosservice call /$UAV_NAME/hw_api/offboard'
   # - goto:
   #     layout: tiled
   #     panes:
