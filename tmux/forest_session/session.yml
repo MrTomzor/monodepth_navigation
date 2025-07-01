@@ -89,7 +89,8 @@ windows:
   - rviz:
       layout: tiled
       panes:
-        - waitForRos; roslaunch mrs_uav_core rviz.launch rviz_config:=/home/slon/user_ros_workspace/src/monodepth_navigation/rviz/rviz_config.rviz
+        # - waitForRos; roslaunch mrs_uav_core rviz.launch rviz_config:=/home/slon/user_ros_workspace/src/monodepth_navigation/rviz/rviz_config.rviz
+        - rosrun rviz rviz -d /home/blueberry/user_ros_workspace/src/monodepth_navigation/rviz/depth_debug.rviz
         - waitForRos; roslaunch mrs_rviz_plugins load_robot.launch
         - waitForRos; roslaunch mrs_rviz_plugins rviz_interface.launch
 

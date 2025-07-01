@@ -103,11 +103,11 @@ class NavigationControllerNode:
             distance = np.sqrt(x**2 + y**2)
 
             if -90 <= angle_deg < -30:
-                left_min_distance = min(left_min_distance, distance)
+                right_min_distance = min(right_min_distance, distance)
             elif -30 <= angle_deg <= 30:
                 front_min_distance = min(front_min_distance, distance)
             elif 30 < angle_deg <= 90:
-                right_min_distance = min(right_min_distance, distance)
+                left_min_distance = min(left_min_distance, distance)
 
         return left_min_distance, front_min_distance, right_min_distance
     

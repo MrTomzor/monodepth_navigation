@@ -47,7 +47,7 @@ class InfraPointcloudBuilder:
             return
 
         cloud = self.create_pointcloud(depth_meters, self.camera_K)
-        cloud.header.stamp = msg.header.stamp
+        #cloud.header.stamp = msg.header.stamp
         self.pub_pointcloud.publish(cloud)
         rospy.loginfo("Pointcloud published")
 
@@ -66,9 +66,11 @@ class InfraPointcloudBuilder:
         fx, fy = K[0, 0], K[1, 1]
         cx, cy = K[0, 2], K[1, 2]
 
+        step = 32
+
         points = []
-        for v in range(0, height, 2):
-            for u in range(0, width, 2):
+        for v in range(0, height, step):
+            for u in range(0, width, step):
                 z = depth[v, u]
                 if np.isfinite(z) and z > 0.1:
                     x = (u - cx) * z / fx
