@@ -23,9 +23,34 @@ from monodepth_navigation.midas_extension import MidasExtension  # type: ignore
 
 class MonocularDepthEstimatorNode:
     def __init__(self):
-        
-        self.node_initialized = False
         rospy.init_node('monocular_depth_estimator', anonymous=True)
+        rospy.loginfo("Node Started")
+        
+        self.midas = MidasExtension(model_type="MiDaS_small")
+        #self.midas = MidasExtension(model_type="DPT_Large")
+        #self.midas = MidasExtension(model_type="DPT_Hybrid")
+
+        self.bridge = CvBridge()
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
+        self.camera_info_received = False
+        self.camera_K = None 
+        self.image = None  
+        self.depth_map = None
+        self.scaled_depth_map = None
+        self.received_openvins_points = False
+
+        
+        output_rgb_image_topic_name = '/midas/rgb_view'
+        output_depth_map_topic_name = '/midas/depth_view'
+        output_scaled_depth_map_topic_name = '/midas/scaled_depth_view'
+        output_pointcloud_topic_name = '/midas/pointcloud'
+        
+        self.pub_rgb = rospy.Publisher(output_rgb_image_topic_name, Image, queue_size=1)
+        self.pub_depth = rospy.Publisher(output_depth_map_topic_name, Image, queue_size=1)
+        self.pub_scaled_depth = rospy.Publisher(output_scaled_depth_map_topic_name, Image, queue_size=1)
+        self.pub_pointcloud = rospy.Publisher(output_pointcloud_topic_name, PointCloud2, queue_size=1)
+
 
         input_img_topic_name = '/uav1/rgbd/color/image_raw'
         input_pointclouds_topic_name = '/ov_msckf/points_slam'
@@ -36,86 +61,58 @@ class MonocularDepthEstimatorNode:
         rospy.Subscriber(input_rgbd_color_cam_info_topic_name, CameraInfo, self.camera_info_callback)
 
         rospy.loginfo("Listening on topics: " + input_img_topic_name + " " + input_pointclouds_topic_name + " " + input_rgbd_color_cam_info_topic_name)
-        rospy.loginfo("Node Started")
-
-        self.pub_rgb = rospy.Publisher('/midas/rgb_view', Image, queue_size=1)
-        self.pub_depth = rospy.Publisher('/midas/depth_view', Image, queue_size=1)
-        self.pub_scaled_depth = rospy.Publisher('/midas/scaled_depth_view', Image, queue_size=1)
-        self.pub_pointcloud = rospy.Publisher('/midas/pointcloud', PointCloud2, queue_size=1)
-
-        
-        self.bridge = CvBridge()
-        self.midas = MidasExtension(model_type="MiDaS_small")
-        #self.midas = MidasExtension(model_type="DPT_Large")
-        #self.midas = MidasExtension(model_type="DPT_Hybrid")
-
-        self.tf_buffer = tf2_ros.Buffer()
-        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
-
-        self.camera_info_received = False
-        self.camera_K = None 
-
-        self.image = None  
-        self.depth_map = None
-        self.scaled_depth_map = None
-
-        self.node_initialized = True
 
 
     def callback(self, image_msg):
-        if not self.node_initialized:
-            return
 
         self.image = self.bridge.imgmsg_to_cv2(image_msg, desired_encoding='bgr8')
-        
-        if self.image is not None:
-            depth_color, self.depth_map = self.midas.run(self.image)
-            
-            # ros_rgb = self.bridge.cv2_to_imgmsg(image, encoding="bgr8")                           # source image
-            # self.pub_rgb.publish(ros_rgb)
-
-            self.depth_map = 1.0 / (self.depth_map)
-          
-            ros_depth = self.bridge.cv2_to_imgmsg(depth_color, encoding="bgr8")                     # MiDas depth map before scaling
-            self.pub_depth.publish(ros_depth) 
-            
-            # scaled_depth_ros = self.bridge.cv2_to_imgmsg(self.scaled_depth_map, encoding="32FC1")   # MiDas depth map after scaling
-            # self.pub_scaled_depth.publish(scaled_depth_ros)
-
-            vis_depth = 1.0 / (self.scaled_depth_map) 
-            vis_depth = np.nan_to_num(vis_depth, nan=0.0, posinf=0.0, neginf=0.0)
-
-            depth_vis = cv2.normalize(vis_depth, None, 0, 255, cv2.NORM_MINMAX)
-            depth_vis = depth_vis.astype(np.uint8)
-            depth_vis = cv2.applyColorMap(depth_vis, cv2.COLORMAP_MAGMA)
-
-            scaled_depth_vis_ros = self.bridge.cv2_to_imgmsg(depth_vis, encoding="bgr8")
-            self.pub_scaled_depth.publish(scaled_depth_vis_ros)
-
-            self.create_pointcloud(self.scaled_depth_map)
-
-            # scaled_depth_ros = self.bridge.cv2_to_imgmsg(self.scaled_depth_map, encoding="32FC1")
-            # self.pub_scaled_depth.publish(scaled_depth_ros)
-
-        else:
+        if self.image is None:
             rospy.logwarn("Failed to decode image")
+            return
+        
+           
+        depth_color, raw_depth = self.midas.run(self.image)
+        self.depth_map = 1.0 / (raw_depth + 1e-9)
+        
+        ros_depth = self.bridge.cv2_to_imgmsg(depth_color, encoding="bgr8")             # MiDas depth map before scaling
+        self.pub_depth.publish(ros_depth) 
+        
+
+        if not self.received_openvins_points:
+            rospy.logwarn("Waiting for OpenVINS pointcloud data")
+
+        if self.scaled_depth_map is None:
+            return
+        
+        inverse_depth_for_display = 1.0 / (self.scaled_depth_map) 
+        inverse_depth_for_display = np.nan_to_num(inverse_depth_for_display, nan=0.0, posinf=0.0, neginf=0.0)
+
+        colorized_depth_image = cv2.normalize(inverse_depth_for_display, None, 0, 255, cv2.NORM_MINMAX)
+        colorized_depth_image = colorized_depth_image.astype(np.uint8)
+        colorized_depth_image = cv2.applyColorMap(colorized_depth_image, cv2.COLORMAP_MAGMA)
+
+        colorized_depth_ros_msg = self.bridge.cv2_to_imgmsg(colorized_depth_image, encoding="bgr8")
+        self.pub_scaled_depth.publish(colorized_depth_ros_msg)                                     # MiDas depth map after scaling
+
+        self.create_pointcloud(self.scaled_depth_map)
+
     
     def camera_info_callback(self, cam_info_msg):
-        if not self.node_initialized:
-            return
-
         if not self.camera_info_received:
             self.camera_K = cam_info_msg.K 
             self.camera_info_received = True 
             self.camera_K = np.array(self.camera_K).reshape(3, 3)
-            rospy.loginfo(f"Received camera info: {self.camera_K}")
+            rospy.loginfo(f"Received camera info")
+            
     
     def pointcloud_callback(self, cloud_msg):
-        if not self.node_initialized:
-            return
-
+        self.received_openvins_points = True
         if not self.camera_info_received:
             rospy.logwarn("Camera intrinsics not yet received.")
+            return
+        
+        if self.depth_map is None:
+            rospy.logwarn("Depth map not ready yet, skipping pointcloud scaling.")
             return
         
         pointcloud = list(pc2.read_points(cloud_msg, field_names=("x", "y", "z"), skip_nans=True))
@@ -152,7 +149,7 @@ class MonocularDepthEstimatorNode:
             self.scaled_depth_map = self.depth_map * scale
 
             rospy.loginfo(f"Received {len(pointcloud)} 3D cloudpoints. \n Transformed {len(transformed_points)} points. \n Projected {len(pointcloud_2d)} points. \n First 3d point is {pointcloud[0]} same poin in 2d {u, v, d} \n Calculated scale is {scale} \n\n\n")
-            ros_debug_image = self.bridge.cv2_to_imgmsg(debug_image, encoding="bgr8")           # RGBD color image with 2d pointclouds
+            ros_debug_image = self.bridge.cv2_to_imgmsg(debug_image, encoding="bgr8")     # RGBD color image with 2d pointclouds
             self.pub_rgb.publish(ros_debug_image)
             
         else: 

@@ -28,10 +28,12 @@ class NavigationControllerNode:
         rospy.init_node('navigation_controller', anonymous=True)
         #input_pointclouds_topic_name = '/ov_msckf/points_slam'
         input_pointclouds_topic_name = '/infra/pointcloud'
+        #input_pointclouds_topic_name = rospy.get_param("input_topic")
         #input_pointclouds_topic_name = '/midas/pointcloud'
 
         rospy.Subscriber(input_pointclouds_topic_name, PointCloud2, self.pointcloud_callback)
 
+        self.pointcloud = None
         self.timer = rospy.Timer(rospy.Duration(0.001), self.callback)
      
         rospy.loginfo("Listening on topics: " + input_pointclouds_topic_name)
@@ -43,7 +45,6 @@ class NavigationControllerNode:
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
-        self.pointcloud = None
         self.safe_distance = 3.0
 
 
