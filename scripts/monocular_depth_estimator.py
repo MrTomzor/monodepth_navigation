@@ -17,6 +17,9 @@ import numpy as np
 from cv_bridge import CvBridge
 import random
 
+
+import tf.transformations as tft  
+
 # MiDaS depth estimation
 from monodepth_navigation.midas_extension import MidasExtension  # type: ignore
 
@@ -33,6 +36,7 @@ class MonocularDepthEstimatorNode:
         self.bridge = CvBridge()
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
+
         self.camera_info_received = False
         self.camera_K = None 
         self.image = None  
@@ -40,8 +44,10 @@ class MonocularDepthEstimatorNode:
         self.scaled_depth_map = None
         self.received_openvins_points = False
 
+        self.scale = 1
+
         
-        output_rgb_image_topic_name = '/midas/rgb_view'
+        output_rgb_image_topic_name = '/midas/rgb_OpenVins_view'
         output_depth_map_topic_name = '/midas/depth_view'
         output_scaled_depth_map_topic_name = '/midas/scaled_depth_view'
         output_pointcloud_topic_name = '/midas/pointcloud'
@@ -64,37 +70,43 @@ class MonocularDepthEstimatorNode:
 
 
     def callback(self, image_msg):
+        if not self.received_openvins_points:
+            rospy.logwarn("Waiting for OpenVINS pointcloud data")
 
         self.image = self.bridge.imgmsg_to_cv2(image_msg, desired_encoding='bgr8')
         if self.image is None:
             rospy.logwarn("Failed to decode image")
             return
         
-           
         depth_color, raw_depth = self.midas.run(self.image)
-        self.depth_map = 1.0 / (raw_depth + 1e-9)
-        
-        ros_depth = self.bridge.cv2_to_imgmsg(depth_color, encoding="bgr8")             # MiDas depth map before scaling
-        self.pub_depth.publish(ros_depth) 
-        
+        self.publish_image(depth_color, self.pub_depth)  # MiDas depth map before scaling
+    
+        #raw_depth = np.nan_to_num(raw_depth, nan=0.0, posinf=0.0, neginf=0.0)
 
-        if not self.received_openvins_points:
-            rospy.logwarn("Waiting for OpenVINS pointcloud data")
-
-        if self.scaled_depth_map is None:
-            return
-        
-        inverse_depth_for_display = 1.0 / (self.scaled_depth_map) 
-        inverse_depth_for_display = np.nan_to_num(inverse_depth_for_display, nan=0.0, posinf=0.0, neginf=0.0)
-
-        colorized_depth_image = cv2.normalize(inverse_depth_for_display, None, 0, 255, cv2.NORM_MINMAX)
-        colorized_depth_image = colorized_depth_image.astype(np.uint8)
-        colorized_depth_image = cv2.applyColorMap(colorized_depth_image, cv2.COLORMAP_MAGMA)
-
-        colorized_depth_ros_msg = self.bridge.cv2_to_imgmsg(colorized_depth_image, encoding="bgr8")
-        self.pub_scaled_depth.publish(colorized_depth_ros_msg)                                     # MiDas depth map after scaling
+        self.depth_map = 1.0 / (raw_depth + 1e-12)      # The closest object is 0, the farthest is 1
+        self.scaled_depth_map = self.depth_map * self.scale
 
         self.create_pointcloud(self.scaled_depth_map)
+
+        inverse_depth_map = 1.0 / (self.scaled_depth_map + 1e-9)
+        colorized_depth_image = self.colorize_inverse_depth(inverse_depth_map)
+        self.publish_image(colorized_depth_image, self.pub_scaled_depth) # MiDas depth map after scaling
+
+        
+
+    def colorize_inverse_depth(self, inverse_depth_map):
+        inverse_depth_map = np.nan_to_num(inverse_depth_map, nan=0.0, posinf=0.0, neginf=0.0)
+        normalized = cv2.normalize(inverse_depth_map, None, 0, 255, cv2.NORM_MINMAX)
+        normalized = normalized.astype(np.uint8)
+        colorized = cv2.applyColorMap(normalized, cv2.COLORMAP_MAGMA)
+
+        return colorized
+
+    
+    def publish_image(self, cv_image, publisher, encoding="bgr8"):
+        ros_msg = self.bridge.cv2_to_imgmsg(cv_image, encoding=encoding)
+        publisher.publish(ros_msg)
+
 
     
     def camera_info_callback(self, cam_info_msg):
@@ -107,98 +119,130 @@ class MonocularDepthEstimatorNode:
     
     def pointcloud_callback(self, cloud_msg):
         self.received_openvins_points = True
-        if not self.camera_info_received:
-            rospy.logwarn("Camera intrinsics not yet received.")
+
+        if not self.camera_info_received or self.image is None:
+            rospy.logwarn("Camera info not yet received or Image is None.")
             return
         
         if self.depth_map is None:
-            rospy.logwarn("Depth map not ready yet, skipping pointcloud scaling.")
+            rospy.logwarn("Depth map from MiDas not yet received, skipping pointcloud scaling.")
             return
         
         pointcloud = list(pc2.read_points(cloud_msg, field_names=("x", "y", "z"), skip_nans=True))
 
-        # Transform points from fish aye to target frame
-        source_frame = cloud_msg.header.frame_id 
-        target_frame = 'uav1/rgbd/color_optical'
-        cloud_time = cloud_msg.header.stamp
-        transformed_points = self.change_points_frame(source_frame, target_frame, pointcloud, cloud_time)
+        transformed_points = self.change_points_frame(cloud_msg.header.frame_id , 'uav1/rgbd/color_optical', pointcloud, cloud_msg.header.stamp)
+        if not transformed_points:
+            rospy.logwarn("All points_frame transforms failed — no points converted")
+            return
 
-        # Projecting 3D points into 2D
-        if transformed_points and self.image is not None: 
-            pointcloud_2d = self.project_points_3d_to_2d(transformed_points)
+        pointcloud_2d = self.project_points_3d_to_2d(transformed_points)
 
-            debug_image = self.image.copy()
-            pred_depths = []
-            real_norms = []
+        #self.vizualize_2d_pointcloud(pointcloud_2d)
+
+        self.update_scale(pointcloud_2d)
+        #rospy.loginfo(f"Received {len(pointcloud)} 3D cloudpoints. \n Transformed {len(transformed_points)} points. \n Projected {len(pointcloud_2d)} points.\n\n\n")
+
+    def update_scale(self, pointcloud_2d):
+        abstract_depths = []
+        real_depths = []
+
+        for (u, v, d) in pointcloud_2d:
+            u = int(u)
+            v = int(v)
+            #d = int(d)
+
+            if (0 <= u < self.depth_map.shape[1]) and (0 <= v < self.depth_map.shape[0]):
+                depth = self.depth_map[v, u]
+                if depth > 0:
+                    abstract_depths.append(depth)
+                    real_depths.append(d)
+
+        if len(abstract_depths) == 0 or len(real_depths) == 0:
+            return
+        
+        abstract_depths = np.array(abstract_depths)
+        real_depths = np.array(real_depths)
+        new_scale = np.median(real_depths / abstract_depths)
+        if np.isfinite(new_scale) and 0.01 < new_scale < 1000.0:
+            self.scale = new_scale
+            rospy.loginfo(f"Updated scale: {self.scale:.4f}")
+                    
             
-            for (u, v, d) in pointcloud_2d:
-                u = int(u)
-                v = int(v)
-                d = int(d)
-                # Drawing 2D points
-                cv2.circle(debug_image, (u, v), 10, (0, 255, 0), -1)
-                if 0 <= u < self.depth_map.shape[1] and 0 <= v < self.depth_map.shape[0]:
-                    pred_depth = self.depth_map[v, u]
-                    pred_depths.append(pred_depth)
-                    real_norms.append(d)
+    def vizualize_2d_pointcloud(self, pointcloud_2d):
+        image_copy = self.image.copy()
+        for (u, v, d) in pointcloud_2d:
+            u = int(u)
+            v = int(v)
+            d = int(d)
 
-            #scaling depth map
-            pred_depths = np.array(pred_depths)
-            real_norms = np.array(real_norms)
-            scale = np.median(real_norms / pred_depths)
-            self.scaled_depth_map = self.depth_map * scale
-
-            rospy.loginfo(f"Received {len(pointcloud)} 3D cloudpoints. \n Transformed {len(transformed_points)} points. \n Projected {len(pointcloud_2d)} points. \n First 3d point is {pointcloud[0]} same poin in 2d {u, v, d} \n Calculated scale is {scale} \n\n\n")
-            ros_debug_image = self.bridge.cv2_to_imgmsg(debug_image, encoding="bgr8")     # RGBD color image with 2d pointclouds
-            self.pub_rgb.publish(ros_debug_image)
-            
-        else: 
-            rospy.logwarn("No points were transformed or no cam image received")
-
+            cv2.circle(image_copy, (u, v), 10, (0, 255, 0), -1)
+            self.publish_image(image_copy, self.pub_rgb)
      
     
-    def change_points_frame(self, source_frame, target_frame, pointclouds, cloud_time):
-        transformed_points = []
-        for pc in pointclouds:
-            x, y, z = pc
-            p = PointStamped()
-            p.header.frame_id = source_frame
-            p.header.stamp = cloud_time
-            p.point.x = x
-            p.point.y = y
-            p.point.z = z
-            try:
-                p_transformed = self.tf_buffer.transform(p, target_frame, timeout=rospy.Duration(0.1))
-                transformed_points.append((p_transformed.point.x, p_transformed.point.y, p_transformed.point.z))
-            except Exception as e:
-                rospy.logwarn(f"Transform failed: {e}")
-                continue
-        return transformed_points
-        
+    # def change_points_frame(self, source_frame, target_frame, pointclouds, cloud_time):
+    #     transformed_points = []
+    #     for pc in pointclouds:
+    #         x, y, z = pc
+    #         p = PointStamped()
+    #         p.header.frame_id = source_frame
+    #         p.header.stamp = cloud_time
+    #         p.point.x = x
+    #         p.point.y = y
+    #         p.point.z = z
+    #         try:
+    #             p_transformed = self.tf_buffer.transform(p, target_frame, timeout=rospy.Duration(0.1))
+    #             transformed_points.append((p_transformed.point.x, p_transformed.point.y, p_transformed.point.z))
+    #         except Exception as e:
+    #             rospy.logwarn(f"Transform failed: {e}")
+    #             continue
+    #     return transformed_points
+    
+
+    def change_points_frame(self, source_frame, target_frame, points, cloud_time):
+        try:
+            tf_msg = self.tf_buffer.lookup_transform(target_frame, source_frame, rospy.Time(0), rospy.Duration(0.1))
+        except (tf2_ros.LookupException, tf2_ros.ExtrapolationException) as e:
+            rospy.logwarn(f"TF lookup failed: {e}")
+            return []     
+
+        t = tf_msg.transform.translation
+        q = tf_msg.transform.rotation
+        T = tft.quaternion_matrix([q.x, q.y, q.z, q.w])   
+        T[0:3, 3] = [t.x, t.y, t.z]     
+
+        transformed = []
+        for x, y, z in points:
+            vec = np.array([x, y, z, 1.0])   
+            x2, y2, z2, _ = T.dot(vec)
+            if z2 > 0:           
+                transformed.append((x2, y2, z2))
+        return transformed
+
+
+    
+    
     def project_points_3d_to_2d(self, pointclouds):
         pixel_coords = []
-
-        for pc in pointclouds:
-            x, y, z = pc
-            if z == 0 or z < 0:
+        for x, y, z in pointclouds:
+            if z <= 0:  
                 continue
-
+            
             K = self.camera_K
             u = ((K[0, 0] * x) / z) + K[0, 2]
             v = ((K[1, 1] * y) / z) + K[1, 2]
 
-            distance = np.sqrt(x**2 + y**2 + z**2)
+            #distance = np.sqrt(x**2 + y**2 + z**2)
 
-            pixel_coords.append((u, v, distance))
-
+            pixel_coords.append((int(round(u)), int(round(v)), z))
         return pixel_coords
+
     
     def create_pointcloud(self, frame):
         height, width = frame.shape
         points = []
         camera_K_inv = np.linalg.inv(self.camera_K)
-        for v in range(0, height, 2):
-            for u in range(0, width, 2):
+        for v in range(0, height, 4):
+            for u in range(0, width, 4):
                 z = frame[v, u]
                 if np.isfinite(z):
                     pixel = np.array([u, v, 1.0])
@@ -207,15 +251,8 @@ class MonocularDepthEstimatorNode:
                     y = ray[1] * z
                     z = ray[2] * z
 
-                    # r = random.randint(0, 255)
-                    # g = random.randint(0, 255)
-                    # b = random.randint(0, 255)
-                    r = 0
-                    g = 0
-                    b = 255
-
+                    r, g, b = 0, 0, 255
                     rgb = (r << 16) | (g << 8) | b
-
                     points.append([x, y, z, rgb])
 
         
@@ -230,7 +267,7 @@ class MonocularDepthEstimatorNode:
             PointField('rgb', 12, PointField.UINT32, 1)
         ]
 
-        cloud_msg = pc2.create_cloud(header, fields, points)                    # Pointcloud from scaled MiDas depth map
+        cloud_msg = pc2.create_cloud(header, fields, points) 
         self.pub_pointcloud.publish(cloud_msg)
         
 
