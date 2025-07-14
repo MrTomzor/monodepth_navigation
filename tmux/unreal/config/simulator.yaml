@@ -29,3 +29,25 @@ sensors:
     rotation_pitch: 30.0 # [deg]
     rotation_yaw: 0.0 # [deg]
     rotation_roll: 0.0 # [deg]
+
+  stereo:
+    width: 600 # [px]
+    height: 400 # [px]
+    enabled: true
+
+  # lidar:
+  #   enabled: true 
+  #   # horizontal_rays: 256 # [-]
+  #   # vertical_rays: 128 # [-]
+  #   horizontal_rays: 128 # [-]
+  #   vertical_rays: 32 # [-]
+  #   offset_x: 0.2 # [m]
+  #   offset_y: 0.0 # [m]
+  #   offset_z: -0.1 # [m]
+  #   rotation_pitch: -30.0 # [deg]
+  #   rotation_roll: 0.0 # [deg]
+  #   rotation_yaw: 0.0 # [deg]
+  #   lidar_segmented:
+  #     enabled: false 
+  #     rate: 10.0 # [Hz]
+
