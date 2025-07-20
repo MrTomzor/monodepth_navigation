@@ -63,29 +63,6 @@ windows:
         - waitForHw; roslaunch mrs_uav_autostart automatic_start.launch
         - waitForControl; rosservice call /$UAV_NAME/hw_api/arming 1; sleep 2; rosservice call /$UAV_NAME/hw_api/offboard
   
-  # - takeoff:
-  #   layout: tiled
-  #   panes:
-  #     - waitForHw; roslaunch mrs_uav_autostart automatic_start.launch
-  #     - 'rostopic wait /$UAV_NAME/vio/odom; rosservice call /$UAV_NAME/hw_api/arming 1; sleep 2; rosservice call /$UAV_NAME/hw_api/offboard'
-
-  # - goto:
-  #     layout: tiled
-  #     panes:
-  #       - 'history -s rosservice call /$UAV_NAME/control_manager/goto \"goal: \[0.0, 10.0, 1.5, 0.0\]\"'
-  # - rviz:
-  #     layout: tiled
-  #     panes:
-  #       - waitForOdometry; roslaunch mrs_uav_core rviz.launch
-  #       - waitForOdometry; roslaunch mrs_rviz_plugins load_robot.launch
-  #       - waitForOdometry; roslaunch mrs_rviz_plugins rviz_interface.launch
-  # - rviz:
-  #     layout: tiled
-  #     panes:
-  #       - waitForOdometry; roslaunch mrs_uav_core rviz.launch rviz_config:=/home/slon/user_ros_workspace/src/monodepth_navigation/rviz/rviz_config.rviz
-  #       - waitForOdometry; roslaunch mrs_rviz_plugins load_robot.launch
-  #       - waitForOdometry; roslaunch mrs_rviz_plugins rviz_interface.launch
-  
   - rviz:
       layout: tiled
       panes:
@@ -94,8 +71,3 @@ windows:
         - waitForRos; roslaunch mrs_rviz_plugins load_robot.launch
         - waitForRos; roslaunch mrs_rviz_plugins rviz_interface.launch
 
-
-  # - layout:
-  #     layout: tiled
-  #     panes:
-  #       - waitForOdometry; sleep 3; ~/.i3/layout_manager.sh ./layout.json
