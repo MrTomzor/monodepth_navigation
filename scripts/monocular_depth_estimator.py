@@ -61,9 +61,15 @@ class MonocularDepthEstimatorNode:
         self.pub_pointcloud = rospy.Publisher(output_pointcloud_topic_name, PointCloud2, queue_size=1)
 
 
-        input_img_topic_name = '/uav1/rgbd/color/image_raw'
-        input_pointclouds_topic_name = '/ov_msckf/points_slam'
-        input_rgbd_color_cam_info_topic_name = '/uav1/rgbd/color/camera_info'
+        #input_img_topic_name = '/uav1/rgbd/color/image_raw'
+        #input_pointclouds_topic_name = '/ov_msckf/points_slam'
+        #input_rgbd_color_cam_info_topic_name = '/uav1/rgbd/color/camera_info'
+
+        input_pointclouds_topic_name = rospy.get_param("input_pointcloud_topic", "/uav1/lidar/points")
+        input_img_topic_name = rospy.get_param("input_img_topic", "/uav1/stereo/left/image_raw")
+        input_rgbd_color_cam_info_topic_name = rospy.get_param("input_camera_info_topic", "/uav1/stereo/left/camera_info")
+
+        self.camera_frame = rospy.get_param("camera_frame", "uav1/stereo_left")
 
         rospy.Subscriber(input_img_topic_name, Image, self.callback, queue_size = 1)
         rospy.Subscriber(input_pointclouds_topic_name, PointCloud2, self.pointcloud_callback)
@@ -130,8 +136,9 @@ class MonocularDepthEstimatorNode:
             return
         
         pointcloud = list(pc2.read_points(cloud_msg, field_names=("x", "y", "z"), skip_nans=True))
-   
-        transformed_points = self.change_points_frame(cloud_msg.header.frame_id , 'uav1/rgbd/color_optical', pointcloud, cloud_msg.header.stamp)
+
+        transformed_points = self.change_points_frame(cloud_msg.header.frame_id, self.camera_frame, pointcloud, cloud_msg.header.stamp)
+        #transformed_points = self.change_points_frame(cloud_msg.header.frame_id , 'uav1/rgbd/color_optical', pointcloud, cloud_msg.header.stamp)
         if not transformed_points:
             rospy.logwarn("All points_frame transforms failed — no points converted")
             return
@@ -240,7 +247,8 @@ class MonocularDepthEstimatorNode:
         
         header = Header()
         header.stamp = rospy.Time.now()
-        header.frame_id = "uav1/rgbd/color_optical" 
+        #header.frame_id = "uav1/rgbd/color_optical" 
+        header.frame_id = self.camera_frame
 
         fields = [
             PointField('x', 0, PointField.FLOAT32, 1),

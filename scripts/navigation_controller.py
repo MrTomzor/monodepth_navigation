@@ -36,8 +36,15 @@ class NavigationControllerNode:
         output_velocity_topic_name = '/uav1/control_manager/velocity_reference'
         self.pub_velocity = rospy.Publisher(output_velocity_topic_name, VelocityReferenceStamped, queue_size=10)
 
+        self.target_frame = rospy.get_param("target_frame", "uav1/fcu_untilted")
+
+
         #input_pointclouds_topic_name = '/ov_msckf/points_slam'
-        input_pointclouds_topic_name = '/infra/pointcloud'
+
+
+        #input_pointclouds_topic_name = '/infra/pointcloud'
+        input_pointclouds_topic_name = rospy.get_param("input_topic", "/uav1/lidar/points")
+
         #input_pointclouds_topic_name = rospy.get_param("input_topic")
         #input_pointclouds_topic_name = '/midas/pointcloud'
         rospy.Subscriber(input_pointclouds_topic_name, PointCloud2, self.pointcloud_callback)
@@ -85,9 +92,9 @@ class NavigationControllerNode:
     
     def pointcloud_callback(self, cloud_msg):
         source_frame = cloud_msg.header.frame_id 
-        target_frame = 'uav1/fcu_untilted'
+        #target_frame = 'uav1/fcu_untilted'
         cloud_time = cloud_msg.header.stamp
-        self.pointcloud = self.change_points_frame(source_frame, target_frame, cloud_msg, cloud_time)
+        self.pointcloud = self.change_points_frame(source_frame,  self.target_frame , cloud_msg, cloud_time)
  
 
 
@@ -136,7 +143,7 @@ class NavigationControllerNode:
     def change_points_frame(self, source_frame, target_frame, cloud_msg, cloud_time):
         try:
             transform = self.tf_buffer.lookup_transform(
-                target_frame,
+                self.target_frame,
                 source_frame,
                 #cloud_time,
                 rospy.Time(0),
@@ -159,7 +166,7 @@ class NavigationControllerNode:
     def send_velocity_command(self, vx, vy, vz, yaw_rate):
         msg = VelocityReferenceStamped()
         msg.header.stamp = rospy.Time.now()
-        msg.header.frame_id = 'uav1/fcu_untilted'
+        msg.header.frame_id = self.target_frame
 
         msg.reference.velocity.x = vx
         msg.reference.velocity.y = vy
