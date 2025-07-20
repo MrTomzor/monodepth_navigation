@@ -1,0 +1,6 @@
+<launch>
+  <param name="input_topic" value="/uav1/lidar/points" />
+  <param name="target_frame" value="uav1/fcu_untilted" />
+
+  <node pkg="monodepth_navigation" type="navigation_controller.py" name="navigation_controller" output="screen" />
+</launch>
