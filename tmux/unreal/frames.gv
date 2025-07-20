@@ -1,0 +1,26 @@
+digraph G {
+"uav1/fcu" -> "uav1/rtk_antenna"[label="Broadcaster: /uav1/fcu_to_rtk_antenna\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1753028352.065 sec old)\nBuffer length: 0.000 sec\n"];
+"uav1/vins_body_front" -> "uav1/ov_imu"[label="Broadcaster: /uav1/tf_vins_fcu_to_mrs_fcu2\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1753028352.065 sec old)\nBuffer length: 0.000 sec\n"];
+"uav1/fcu" -> "uav1/vins_body_front"[label="Broadcaster: /uav1/tf_vins_fcu_to_mrs_fcu\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1753028352.065 sec old)\nBuffer length: 0.000 sec\n"];
+"uav1/fcu" -> "uav1/fcu/uav_marker"[label="Broadcaster: /uav1/tf_published_uav_marker_link\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1753028352.065 sec old)\nBuffer length: 0.000 sec\n"];
+"uav1/fcu" -> "uav1/fcu/props"[label="Broadcaster: /uav1/tf_published_props_link\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1753028352.065 sec old)\nBuffer length: 0.000 sec\n"];
+"uav1/fcu" -> "uav1/fcu/arms"[label="Broadcaster: /uav1/tf_published_arms_link\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1753028352.065 sec old)\nBuffer length: 0.000 sec\n"];
+"uav1/fcu" -> "uav1/fcu/arms_red"[label="Broadcaster: /uav1/tf_published_arms_red_link\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1753028352.065 sec old)\nBuffer length: 0.000 sec\n"];
+"uav1/fixed_origin" -> "uav1/local_origin"[label="Broadcaster: /uav1/uav1_nodelet_manager\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1753028352.065 sec old)\nBuffer length: 0.000 sec\n"];
+"uav1/fcu" -> "uav1/fixed_origin"[label="Broadcaster: /uav1/uav1_nodelet_manager\nAverage rate: 81.875 Hz\nMost recent transform: 1753028352.053 ( 0.012 sec old)\nBuffer length: 1.600 sec\n"];
+"uav1/fcu" -> "uav1/gps_baro_origin_att_only"[label="Broadcaster: /uav1/uav1_nodelet_manager\nAverage rate: 100.866 Hz\nMost recent transform: 1753028352.061 ( 0.004 sec old)\nBuffer length: 1.616 sec\n"];
+"uav1/fcu" -> "uav1/gps_baro_origin"[label="Broadcaster: /uav1/uav1_nodelet_manager\nAverage rate: 100.866 Hz\nMost recent transform: 1753028352.061 ( 0.004 sec old)\nBuffer length: 1.616 sec\n"];
+"uav1/fcu" -> "uav1/utm_origin"[label="Broadcaster: /uav1/uav1_nodelet_manager\nAverage rate: 100.866 Hz\nMost recent transform: 1753028352.061 ( 0.004 sec old)\nBuffer length: 1.616 sec\n"];
+"uav1/fcu" -> "uav1/world_origin"[label="Broadcaster: /uav1/uav1_nodelet_manager\nAverage rate: 100.866 Hz\nMost recent transform: 1753028352.061 ( 0.004 sec old)\nBuffer length: 1.616 sec\n"];
+"uav1/fcu" -> "uav1/fcu_untilted"[label="Broadcaster: /uav1/uav1_nodelet_manager\nAverage rate: 120.025 Hz\nMost recent transform: 1753028352.053 ( 0.012 sec old)\nBuffer length: 1.608 sec\n"];
+"uav1/fcu" -> "uav1/rgb"[label="Broadcaster: /unreal_nodelet_manager\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1753028352.065 sec old)\nBuffer length: 0.000 sec\n"];
+"uav1/fcu" -> "uav1/stereo_left"[label="Broadcaster: /unreal_nodelet_manager\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1753028352.065 sec old)\nBuffer length: 0.000 sec\n"];
+"uav1/fcu" -> "uav1/stereo_right"[label="Broadcaster: /unreal_nodelet_manager\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1753028352.065 sec old)\nBuffer length: 0.000 sec\n"];
+"uav1/fcu" -> "uav1/lidar"[label="Broadcaster: /unreal_nodelet_manager\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1753028352.065 sec old)\nBuffer length: 0.000 sec\n"];
+"uav1/fcu" -> "uav1/stable_origin"[label="Broadcaster: /uav1/uav1_nodelet_manager\nAverage rate: 81.875 Hz\nMost recent transform: 1753028352.053 ( 0.012 sec old)\nBuffer length: 1.600 sec\n"];
+"uav1/fcu_untilted" -> "uav1/amsl_origin"[label="Broadcaster: /uav1/uav1_nodelet_manager\nAverage rate: 41.980 Hz\nMost recent transform: 1753028352.053 ( 0.012 sec old)\nBuffer length: 1.596 sec\n"];
+edge [style=invis];
+ subgraph cluster_legend { style=bold; color=black; label ="view_frames Result";
+"Recorded at time: 1753028352.065"[ shape=plaintext ] ;
+ }->"uav1/fcu";
+}

@@ -60,3 +60,14 @@ windows:
       layout: tiled
       panes:
         - waitForControl; sleep 5; ~/.i3/layout_manager.sh ./layout.json
+
+  - monodepth:
+      layout: tiled
+      panes:
+        - waitForHw; roslaunch monodepth_navigation midas_node.launch
+
+  - navigation:
+      layout: tiled
+      panes:
+        - waitForHw; roslaunch monodepth_navigation navigation_node.launch
+
