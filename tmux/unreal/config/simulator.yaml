@@ -11,6 +11,25 @@ uav1:
     z: 0.0
     heading: 0.0
 
+world_name:
+  # "cave"
+  # "valley"
+  # "forest"
+  "infinite_forest"
+  # "warehouse"
+  # "cave"
+  # "erding_airbase"
+  # "temesvar"
+  # "electric_towers"
+  # "race_1"
+  # "race_2"
+  # "industial_warehouse"
+  # "service_tunnel"
+  # "dead_spruce_forest"
+
+weather_type:
+  "sunny"
+
 sensors:
 
   rgb:
@@ -31,9 +50,11 @@ sensors:
     rotation_roll: 0.0 # [deg]
 
   stereo:
-    width: 600 # [px]
-    height: 400 # [px]
+    width: 672 # [px]
+    height: 384 # [px]
     enabled: true
+    rotation_pitch: 0.0
+    rotation_yaw: 0.0
 
   lidar:
     enabled: true 
@@ -44,7 +65,7 @@ sensors:
     offset_x: 0.2 # [m]
     offset_y: 0.0 # [m]
     offset_z: -0.1 # [m]
-    rotation_pitch: -30.0 # [deg]
+    rotation_pitch: 30.0 # [deg]
     rotation_roll: 0.0 # [deg]
     rotation_yaw: 0.0 # [deg]
     lidar_segmented:

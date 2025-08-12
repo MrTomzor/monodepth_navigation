@@ -1,41 +1,61 @@
 #!/usr/bin/env python3
 
-# ROS core
-import rospy
 
-# ROS messages
+import rospy
 from sensor_msgs.msg import Image, CameraInfo, PointCloud2, PointField
 from std_msgs.msg import Header
-
-# ROS utilities
 import sensor_msgs.point_cloud2 as pc2
-
-# CV & math
 import numpy as np
 from cv_bridge import CvBridge
-
+import tf2_ros
+from monodepth_navigation.pointcloud_processor import PointCloudProcessor
+from monodepth_navigation.camera_processor import CameraProcessor
 
 class InfraPointcloudBuilder:
     def __init__(self):
         rospy.init_node('infra_pointcloud_builder', anonymous=True)
-
-        rospy.Subscriber('/uav1/rgbd/aligned_depth_to_color/image_raw', Image, self.callback)
-        rospy.Subscriber('/uav1/rgbd/color/camera_info', CameraInfo, self.camera_info_callback)
-
-        self.pub_pointcloud = rospy.Publisher('/infra/pointcloud', PointCloud2, queue_size=1)
-
+        self.init_params()
+        self.init_tf()
+        self.init_state()
+        self.init_publishers()
+        self.init_subscribers()
         rospy.loginfo("Node Started")
 
-        self.camera_K = None
-        self.bridge = CvBridge()
 
+    def init_params(self):
+        self.input_depth_topic = rospy.get_param("input_depth_topic","/uav1/rgbd/aligned_depth_to_color/image_raw")
+        self.input_caminfo_topic = rospy.get_param("input_camera_info_topic","/uav1/rgbd/color/camera_info")
+        self.output_cloud_topic = rospy.get_param("output_pointcloud_topic", "/infra/pointcloud")
+        self.camera_frame = rospy.get_param("camera_frame", "uav1/rgbd/color_optical")
+
+    def init_tf(self):
+        self.bridge = CvBridge()
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
+
+    def init_state(self):
+        self.bridge = CvBridge()
+        self.pointcloud = PointCloudProcessor(self.tf_buffer)
+        self.camera = CameraProcessor(self.bridge)
+
+    def init_publishers(self):
+        self.pub_pointcloud = rospy.Publisher(self.output_cloud_topic, PointCloud2, queue_size=1)
+
+    def init_subscribers(self):
+        rospy.Subscriber(self.input_depth_topic, Image, self.callback, queue_size=1)
+        rospy.Subscriber(self.input_caminfo_topic, CameraInfo, self.camera_info_callback, queue_size=1)
+
+
+    def camera_info_callback(self, msg):
+        self.camera.set_camera_k_info(msg)
+   
 
     def callback(self, msg):
-        if self.camera_K is None:
+        if self.camera.k_matrix is None:
             rospy.logwarn("Camera intrinsics not received yet!")
             return
-        rospy.loginfo("Depth image received")
-
+       
+        msg_time = msg.header.stamp
         depth_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
 
         if depth_image.dtype == np.uint16:
@@ -46,53 +66,13 @@ class InfraPointcloudBuilder:
             rospy.logerr("Unsupported depth image format")
             return
 
-        cloud = self.create_pointcloud(depth_meters, self.camera_K)
-        #cloud.header.stamp = msg.header.stamp
-        self.pub_pointcloud.publish(cloud)
-        rospy.loginfo("Pointcloud published")
+       
+        cloud_msg = self.pointcloud.create_cloud_msg(depth_meters, msg_time, self.camera.k_matrix, self.camera_frame)
+        self.pointcloud.publish_pointcloud(self.pub_pointcloud, cloud_msg)
+     
 
 
-
-
-    def camera_info_callback(self, msg):
-        if self.camera_K is None:
-            self.camera_K = np.array(msg.K).reshape(3, 3)
-            rospy.loginfo(f"Received camera intrinsics:\n{self.camera_K}")
-
-   
-
-    def create_pointcloud(self, depth, K):
-        height, width = depth.shape
-        fx, fy = K[0, 0], K[1, 1]
-        cx, cy = K[0, 2], K[1, 2]
-
-        step = 32
-
-        points = []
-        for v in range(0, height, step):
-            for u in range(0, width, step):
-                z = depth[v, u]
-                if np.isfinite(z) and z > 0.1:
-                    x = (u - cx) * z / fx
-                    y = (v - cy) * z / fy
-
-                    r, g, b = 0, 0, 255
-                    rgb = (r << 16) | (g << 8) | b
-
-                    points.append([x, y, z, rgb])
-
-        header = Header()
-        header.stamp = rospy.Time.now()
-        header.frame_id = "uav1/rgbd/color_optical"
-
-        fields = [
-            PointField('x', 0, PointField.FLOAT32, 1),
-            PointField('y', 4, PointField.FLOAT32, 1),
-            PointField('z', 8, PointField.FLOAT32, 1),
-            PointField('rgb', 12, PointField.UINT32, 1)
-        ]
-
-        return pc2.create_cloud(header, fields, points)
+  
 
 
 if __name__ == '__main__':

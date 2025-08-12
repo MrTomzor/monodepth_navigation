@@ -1,0 +1,9 @@
+<launch>
+    <param name="input_depth_topic" value="/uav1/rgbd/aligned_depth_to_color/image_raw" />
+    <param name="input_camera_info_topic" value="/uav1/rgbd/color/camera_info" />
+
+    <param name="output_pointcloud_topic" value="/infra/pointcloud" />
+    <param name="camera_frame" value="uav1/rgbd/color_optical" /> 
+
+  <node pkg="monodepth_navigation" type="infra_pointcloud_builder.py" name="infra_pointcloud_builder" output="screen" />
+</launch>

@@ -1,117 +1,96 @@
 #!/usr/bin/env python3
 
-# ROS core
 import rospy
-
-# ROS messages
 from sensor_msgs.msg import PointCloud2
-from geometry_msgs.msg import PointStamped
 from mrs_msgs.msg import VelocityReferenceStamped
 from cv_bridge import CvBridge
-
-# ROS utilities
-import sensor_msgs.point_cloud2 as pc2
 import tf2_ros
-import tf2_geometry_msgs.tf2_geometry_msgs
-from tf2_sensor_msgs.tf2_sensor_msgs import do_transform_cloud
-
-
-# Math
 import numpy as np
-
-
+from monodepth_navigation.pointcloud_processor import PointCloudProcessor
 
 
 class NavigationControllerNode:
     def __init__(self):
         rospy.init_node('navigation_controller', anonymous=True)
+        self.init_params()
+        self.init_tf()
+        self.init_state()
+        self.init_publishers()
+        self.init_subscribers()
+        self.init_timer()
+        rospy.loginfo("Node Started")
+        
+    def init_params(self):
+        #self.safe_distance = rospy.get_param("safe_distance", 3.0)
+        self.camera_frame = rospy.get_param("target_frame", "uav1/fcu_untilted")
+        self.input_pointcloud_topic = rospy.get_param("input_pointcloud_topic", "/midas/pointcloud")
+        self.output_velocity_topic = rospy.get_param("output_velocity_topic", "/uav1/control_manager/velocity_reference")
 
-        self.pointcloud = None        
-        self.safe_distance = 3.0
-   
+    def init_tf(self):
         self.bridge = CvBridge()
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
-        output_velocity_topic_name = '/uav1/control_manager/velocity_reference'
-        self.pub_velocity = rospy.Publisher(output_velocity_topic_name, VelocityReferenceStamped, queue_size=10)
-
-        self.target_frame = rospy.get_param("target_frame", "uav1/fcu_untilted")
-
-
-        #input_pointclouds_topic_name = '/ov_msckf/points_slam'
-
-
-        #input_pointclouds_topic_name = '/infra/pointcloud'
-        input_pointclouds_topic_name = rospy.get_param("input_topic", "/uav1/lidar/points")
-
-        #input_pointclouds_topic_name = rospy.get_param("input_topic")
-        #input_pointclouds_topic_name = '/midas/pointcloud'
-        rospy.Subscriber(input_pointclouds_topic_name, PointCloud2, self.pointcloud_callback)
-        self.timer = rospy.Timer(rospy.Duration(0.001), self.callback)
-
-        rospy.loginfo("Listening on topics: " + input_pointclouds_topic_name)
-        rospy.loginfo("Node Started")
+    def init_state(self):
+        self.drone_size = 0.02
+        self.near_threshold = 3.0
+        self.far_threshold = 12.0
         
 
+        self.pointcloud = PointCloudProcessor(self.tf_buffer)
+        self.latest_pointcloud = None
+
+    def init_publishers(self):
+        self.pub_velocity = rospy.Publisher(self.output_velocity_topic, VelocityReferenceStamped, queue_size=10)
+
+    def init_subscribers(self):
+        rospy.Subscriber(self.input_pointcloud_topic, PointCloud2, self.pointcloud_callback)
+
+    def init_timer(self):
+        self.timer = rospy.Timer(rospy.Duration(0.001), self.callback)
 
 
     def callback(self, event):
-        if not self.pointcloud:
+        if not self.latest_pointcloud:
             #rospy.logwarn("There is no pointcloud to navigate\n")
             return
-
-        left_min_distance, front_min_distance, right_min_distance, wide_left_distance, wide_right_distance = self.get_distances_from_sectors(self.pointcloud, 2)
-        rospy.loginfo(f"\n\nDISTS: L = {left_min_distance:.2f}   F = {front_min_distance:.2f}  R = {right_min_distance:.2f}  WL = {wide_left_distance:.2f}  WR = {wide_right_distance:.2f} ")
-        
-        near_threshold = 3.0 
-        far_threshold = 12.0 
-        
-        if front_min_distance <= near_threshold:
-            if wide_left_distance > wide_right_distance:
-                rospy.loginfo("Obstacle ahead! Turning left")
-                self.send_velocity_command(vx=0.0, vy=0.0, vz=0.0, yaw_rate=1.7)
-            else:
-                rospy.loginfo("Obstacle ahead! Turning right")
-                self.send_velocity_command(vx=0.0, vy=0.0, vz=0.0, yaw_rate=-1.7)
-
-        elif front_min_distance <= far_threshold:
-            if left_min_distance > right_min_distance:
-                rospy.loginfo("Obstacle ahead (far), gently veering left")
-                self.send_velocity_command(vx=1.3, vy=0.1, vz=0.0, yaw_rate=0.2)
-            else:
-                rospy.loginfo("Obstacle ahead (far), gently veering right")
-                self.send_velocity_command(vx=1.3, vy=-0.1, vz=0.0, yaw_rate=-0.2)
-
-        else:
-            rospy.loginfo("Path clear, flying straight")
-            self.send_velocity_command(vx=1.9, vy=0.0, vz=0.0, yaw_rate=0.0)
-
-        self.pointcloud = None
+        near_left, near_front, near_right, far_left, far_right = self.get_distances_from_sectors(self.latest_pointcloud)
+        self.decide_action(near_left, near_front, near_right, far_left, far_right)
+        self.latest_pointcloud = None
 
     
     def pointcloud_callback(self, cloud_msg):
-        source_frame = cloud_msg.header.frame_id 
-        #target_frame = 'uav1/fcu_untilted'
-        cloud_time = cloud_msg.header.stamp
-        self.pointcloud = self.change_points_frame(source_frame,  self.target_frame , cloud_msg, cloud_time)
- 
+        raw_pointcloud = self.pointcloud.read_pointcloud(cloud_msg)
+        self.latest_pointcloud = self.pointcloud.change_points_frame(self.camera_frame,  cloud_msg.header.frame_id, self.camera_frame, raw_pointcloud, cloud_msg.header.stamp)
 
 
-    
+    def decide_action(self, near_left, near_front, near_right, far_left, far_right):
+        rospy.loginfo(f"\n\nDISTS: L = {near_left:.2f}   F = {near_front:.2f}  R = {near_right:.2f}  WL = {far_left:.2f}  WR = {far_right:.2f} ")
+      
+        if near_front <= self.near_threshold and near_front >= self.drone_size:
+            if far_left > far_right:
+                rospy.loginfo("Obstacle ahead! Turning left")
+                self.send_velocity_command(vx=0.0, vy=0.0, vz=0.0, yaw_rate=0.6)
+            else:
+                rospy.loginfo("Obstacle ahead! Turning right")
+                self.send_velocity_command(vx=0.0, vy=0.0, vz=0.0, yaw_rate=-0.6)
+        elif near_front <= self.far_threshold:
+            if near_left > near_right:
+                rospy.loginfo("Obstacle ahead (far), gently veering left")
+                self.send_velocity_command(vx=0.1, vy=0.1, vz=0.0, yaw_rate=0.2)
+            else:
+                rospy.loginfo("Obstacle ahead (far), gently veering right")
+                self.send_velocity_command(vx=0.1, vy=-0.1, vz=0.0, yaw_rate=-0.2)
+        else:
+            rospy.loginfo("Path clear, flying straight")
+            self.send_velocity_command(vx=0.4, vy=0.0, vz=0.0, yaw_rate=0.0)
 
-    def get_distances_from_sectors(self, pointcloud, sampling_step):
-        left_min_distance = float('inf')
-        front_min_distance = float('inf')
-        right_min_distance = float('inf')
-        wide_left_min_distance = float('inf')
-        wide_right_min_distance = float('inf')
 
-        for i, point in enumerate(pointcloud):
-            rospy.Time(0),
+    def get_distances_from_sectors(self, pointcloud):
+        near_left = near_front = near_right = far_left = far_right = float('inf')
+        for point in pointcloud:
             x, y, z = point
-
-            if not (-0.1 < z < 0.1):
+            if not (-0.15 < z < 0.15):
                 continue
 
             angle_rad = np.arctan2(y, x)
@@ -123,50 +102,27 @@ class NavigationControllerNode:
             distance = np.sqrt(x**2 + y**2)
 
             if -20 <= angle_deg < 20:
-                front_min_distance = min(front_min_distance, distance)
+                near_front = min(near_front, distance)
             elif 20 <= angle_deg < 30: 
-                left_min_distance = min(left_min_distance, distance)
-                wide_left_min_distance = min(wide_left_min_distance, distance)
+                near_left = min(near_left, distance)
+                far_left = min(far_left, distance)
             elif -30 <= angle_deg < -20:
-                right_min_distance = min(right_min_distance, distance)
-                wide_right_min_distance = min(wide_right_min_distance, distance)
+                near_right = min(near_right, distance)
+                far_right = min(far_right, distance)
             elif 20 <= angle_deg < 90:
-                wide_left_min_distance = min(wide_left_min_distance, distance)
+                far_left = min(far_left, distance)
             elif -90 <= angle_deg < -20:
-                wide_right_min_distance = min(wide_right_min_distance, distance)
+                far_right = min(far_right, distance)
 
-        return left_min_distance, front_min_distance, right_min_distance, wide_left_min_distance, wide_right_min_distance
+        return near_left, near_front, near_right, far_left, far_right
     
 
 
-        
-    def change_points_frame(self, source_frame, target_frame, cloud_msg, cloud_time):
-        try:
-            transform = self.tf_buffer.lookup_transform(
-                self.target_frame,
-                source_frame,
-                #cloud_time,
-                rospy.Time(0),
-                rospy.Duration(0.8)
-            )
-            transformed_cloud_msg = do_transform_cloud(cloud_msg, transform)
-            transformed_points = list(pc2.read_points(
-                transformed_cloud_msg,
-                field_names=("x", "y", "z"),
-                skip_nans=True
-            ))
-
-            return transformed_points
-
-        except Exception as e:
-            rospy.logwarn(f"Failed to transform cloud: {e}")
-            return []
-        
     
     def send_velocity_command(self, vx, vy, vz, yaw_rate):
         msg = VelocityReferenceStamped()
         msg.header.stamp = rospy.Time.now()
-        msg.header.frame_id = self.target_frame
+        msg.header.frame_id = self.camera_frame
 
         msg.reference.velocity.x = vx
         msg.reference.velocity.y = vy
