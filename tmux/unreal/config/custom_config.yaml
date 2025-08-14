@@ -199,7 +199,7 @@ mrs_uav_managers:
         controller: "Se3Controller"
         tracker: "MpcTracker"
 
-      takeoff_height: 2.5
+      takeoff_height: 10
 
     midair_activation:
 

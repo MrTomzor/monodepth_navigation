@@ -34,8 +34,15 @@ windows:
       layout: tiled
       panes:
         - waitForHw; roslaunch monodepth_navigation own_mapplan.launch
-          config_octomap_server:=./custom_configs/octomap_server.yaml
-          config_octomap_planner:=./custom_configs/octomap_planner.yaml
+          config_octomap_server:=./config/octomap_server.yaml
+          config_octomap_planner:=./config/octomap_planner.yaml
+        # - waitForHw; roslaunch monodepth_navigation base_unreal_mapplan.launch
+          # Old from monospheres
+          # config_octomap_server:=/home/blueberry/mrs_apptainer/user_ros_workspace/src/monodepth_navigation/custom_configs/octomap_server.yaml
+          # config_octomap_planner:=/home/blueberry/mrs_apptainer/user_ros_workspace/src/monodepth_navigation/custom_configs/octomap_planner.yaml
+          # Config from unreal basic session
+          #config_octomap_server:=./custom_configs/octomap_server.yaml
+          #config_octomap_planner:=./custom_configs/octomap_planner.yaml 
   - hw_api:
       layout: tiled
       panes:
