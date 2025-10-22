@@ -1,9 +1,13 @@
 # for point cloud raycasting
 #
-resolution: 0.5
+resolution: 1
 
 octomap_global_vis:
   free_throttled_rate: 0.1
+
+align_altitude:
+  enabled: false
+  robot_height: 1
 
 local_map:
 
@@ -100,3 +104,17 @@ sensor_params:
         update_free_space: true # update free space when data at the specific point is missing?
         clear_occupied: false # clear occupied voxels using unknown rays? BEWARE, setting this to true is very DANGEROUS
         free_ray_distance_unknown: 5.0 # [m] ray length for raycasting
+
+sensor_model:
+
+  hit: 0.62
+  miss: 0.45
+  min: 0.12
+  max: 0.90
+
+
+  # hit: 0.55
+  # miss: 0.40
+  # min: 0.07
+  # max: 0.95
+

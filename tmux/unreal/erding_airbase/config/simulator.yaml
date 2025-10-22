@@ -6,10 +6,10 @@ uav1:
   frame: "a300"
   type: "x500"
   spawn:
-    x: 30.0
-    y: 40.0
+    x: 90.0
+    y: 65.0
     z: 0.1
-    heading: 0.0
+    heading: -1.0
 
 world_name:
   # "cave"
@@ -21,7 +21,7 @@ world_name:
    "erding_airbase"
   # "service_tunnel"
   #"eletric_towers"
-  # "industrial_warehouse"
+  # "erding_airbase"
   # "race_1"
   # "race_2"
   # "service_tunnel"

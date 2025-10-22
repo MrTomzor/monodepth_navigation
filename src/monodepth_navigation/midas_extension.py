@@ -43,5 +43,8 @@ class MidasExtension:
         depth_map_8u = (depth_map_normalized * 255).astype(np.uint8)
         depth_color = cv2.applyColorMap(depth_map_8u, cv2.COLORMAP_MAGMA)
 
+        print("MiDaS Depth shape:", depth_map.shape)
+        print("MiDaS Depth min/max:", depth_map.min(), depth_map.max(), '\n')
+
         return depth_color, depth_map
 

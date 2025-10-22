@@ -1,4 +1,4 @@
-resolution: 0.25
+resolution: 0.4
 
 # for point cloud raycasting
 
@@ -32,10 +32,6 @@ sensor_params:
 
 sensor_model:
 
-#  hit: 0.62
-#  miss: 0.45
-#  min: 0.12
-#  max: 0.90
 
   hit: 0.87
   miss: 0.15

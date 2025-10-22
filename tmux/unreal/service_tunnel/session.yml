@@ -29,20 +29,13 @@ windows:
   - navigation:
       layout: tiled
       panes:
-         - waitForHw; roslaunch monodepth_navigation navigation_node.launch x_octogoal:=5 y_octogoal:=0 z_octogoal:=0 yaw_octogoal:=0
+         - waitForHw; roslaunch monodepth_navigation navigation_node.launch x_octogoal:=-20 y_octogoal:=-6 z_octogoal:=-55.1 yaw_octogoal:=0
   - mapplan:
       layout: tiled
       panes:
         - waitForHw; roslaunch monodepth_navigation own_mapplan.launch
           config_octomap_server:=./config/octomap_server.yaml
           config_octomap_planner:=./config/octomap_planner.yaml
-        # - waitForHw; roslaunch monodepth_navigation base_unreal_mapplan.launch
-          # Old from monospheres
-          # config_octomap_server:=/home/blueberry/mrs_apptainer/user_ros_workspace/src/monodepth_navigation/custom_configs/octomap_server.yaml
-          # config_octomap_planner:=/home/blueberry/mrs_apptainer/user_ros_workspace/src/monodepth_navigation/custom_configs/octomap_planner.yaml
-          # Config from unreal basic session
-          #config_octomap_server:=./custom_configs/octomap_server.yaml
-          #config_octomap_planner:=./custom_configs/octomap_planner.yaml 
   - hw_api:
       layout: tiled
       panes:
@@ -64,7 +57,6 @@ windows:
       panes:
         - waitForHw; roslaunch mrs_uav_autostart automatic_start.launch
         - waitForControl; rosservice call /$UAV_NAME/hw_api/arming 1; sleep 2; rosservice call /$UAV_NAME/hw_api/offboard
-        # - waitForControl; rosservice call /$UAV_NAME/hw_api/arming 1; rosservice call /$UAV_NAME/uav_manager/midair_activation
   - control:
       layout: tiled
       panes:

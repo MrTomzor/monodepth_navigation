@@ -9,6 +9,15 @@
 
   <param name="safe_distance" value="3.0" />
   <param name="output_velocity_topic" value="/uav1/control_manager/velocity_reference" />
+<!--   <param name="x_octogoal" value="5" /> -->
+<!--   <param name="y_octogoal" value="0" /> -->
+<!--   <param name="z_octogoal" value="0" /> -->
+<!--   <param name="yaw_octogoal" value="0" /> -->
+
+  <param name="x_octogoal" value="$(arg x_octogoal)" />
+  <param name="y_octogoal" value="$(arg y_octogoal)" />
+  <param name="z_octogoal" value="$(arg z_octogoal)" />
+  <param name="yaw_octogoal" value="$(arg yaw_octogoal)" />
 
   <node pkg="monodepth_navigation" type="navigation_controller.py" name="navigation_controller" output="screen" />
 </launch>

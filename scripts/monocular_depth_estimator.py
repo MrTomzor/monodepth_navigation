@@ -22,22 +22,21 @@ class MonocularDepthEstimatorNode:
         self.init_subscribers()
         self.init_timer()
         rospy.loginfo("Node Started")
-        
-        
+
     def init_state(self):
         self.midas = MidasExtension(model_type="DPT_Large")
-        #self.midas = MidasExtension(model_type="DPT_Hybrid")
-        #self.midas = MidasExtension(model_type="MiDaS_small")
+        # self.midas = MidasExtension(model_type="DPT_Hybrid")
+        # self.midas = MidasExtension(model_type="MiDaS_small")
 
-        #self.depth_map = None
-        #self.scaled_depth_map = None
+        # self.depth_map = None
+        # self.scaled_depth_map = None
         self.scale = 1
         self.cloud_buffer = deque(maxlen=30)
         self.pointcloud = PointCloudProcessor(self.tf_buffer)
         self.camera = CameraProcessor(self.bridge)
 
     def init_params(self):
-        #self.output_rgb_image_topic_name = rospy.get_param("output_openVins_image_topic")
+        # self.output_rgb_image_topic_name = rospy.get_param("output_openVins_image_topic")
         self.output_depth_map_topic_name = rospy.get_param("output_depth_map_topic")
 
         self.output_scaled_depth_map_topic_name_map = rospy.get_param("output_scaled_depth_map_topic_map")
@@ -46,10 +45,10 @@ class MonocularDepthEstimatorNode:
         self.output_pointcloud_topic_map_name = rospy.get_param("output_pointcloud_topic_map")
         self.output_pointcloud_topic_value_name = rospy.get_param("output_pointcloud_topic_value")
 
-
         self.input_pointclouds_topic_name = rospy.get_param("input_pointcloud_topic", "/uav1/lidar/points")
         self.input_img_topic_name = rospy.get_param("input_img_topic", "/uav1/stereo/left/image_raw")
-        self.input_rgbd_color_cam_info_topic_name = rospy.get_param("input_camera_info_topic", "/uav1/stereo/left/camera_info")
+        self.input_rgbd_color_cam_info_topic_name = rospy.get_param("input_camera_info_topic",
+                                                                    "/uav1/stereo/left/camera_info")
         self.camera_frame = rospy.get_param("camera_frame", "uav1/stereo_left")
 
     def init_tf(self):
@@ -58,20 +57,21 @@ class MonocularDepthEstimatorNode:
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
     def init_publishers(self):
-        #self.pub_rgb = rospy.Publisher(self.output_rgb_image_topic_name, Image, queue_size=1)
+        # self.pub_rgb = rospy.Publisher(self.output_rgb_image_topic_name, Image, queue_size=1)
         self.pub_depth = rospy.Publisher(self.output_depth_map_topic_name, Image, queue_size=1)
 
         self.pub_scaled_depth_map = rospy.Publisher(self.output_scaled_depth_map_topic_name_map, Image, queue_size=1)
-        self.pub_scaled_depth_value = rospy.Publisher(self.output_scaled_depth_map_topic_name_value, Image, queue_size=1)
+        self.pub_scaled_depth_value = rospy.Publisher(self.output_scaled_depth_map_topic_name_value, Image,
+                                                      queue_size=1)
 
         self.pub_pointcloud_map = rospy.Publisher(self.output_pointcloud_topic_map_name, PointCloud2, queue_size=1)
         self.pub_pointcloud_value = rospy.Publisher(self.output_pointcloud_topic_value_name, PointCloud2, queue_size=1)
 
     def init_subscribers(self):
-        rospy.Subscriber(self.input_img_topic_name, Image, self.image_callback, queue_size = 1)
+        rospy.Subscriber(self.input_img_topic_name, Image, self.image_callback, queue_size=1)
         rospy.Subscriber(self.input_pointclouds_topic_name, PointCloud2, self.pointcloud_callback)
         rospy.Subscriber(self.input_rgbd_color_cam_info_topic_name, CameraInfo, self.camera_info_callback)
-    
+
     def init_timer(self):
         self.timer = rospy.Timer(rospy.Duration(0.01), self.compute_midas_pointcloud)
 
@@ -85,17 +85,18 @@ class MonocularDepthEstimatorNode:
         if self.camera.k_matrix is None:
             rospy.logwarn("Camera intrinsic matrix not initialized yet.")
             return
-        
+
         raw_pointlcoud = self.pointcloud.read_pointcloud(cloud_msg)
-        transformed_pointcloud = self.pointcloud.change_points_frame(self.camera_frame, cloud_msg.header.frame_id, self.camera_frame, raw_pointlcoud, cloud_msg.header.stamp)
+        transformed_pointcloud = self.pointcloud.change_points_frame(self.camera_frame, cloud_msg.header.frame_id,
+                                                                     self.camera_frame, raw_pointlcoud,
+                                                                     cloud_msg.header.stamp)
         if transformed_pointcloud is None or len(transformed_pointcloud) == 0:
             rospy.logwarn("There is no pointcloud in frame")
             return
-        
+
         pointcloud_2d = self.pointcloud.project_points_3d_to_2d(transformed_pointcloud, self.camera.k_matrix)
         self.cloud_buffer.append((cloud_msg.header.stamp, pointcloud_2d))
-        
-        
+
     def compute_midas_pointcloud(self, event):
         current_image = self.camera.image
         current_time = self.camera.image_time
@@ -112,27 +113,26 @@ class MonocularDepthEstimatorNode:
         depth_map = 1.0 / (raw_depth + 1e-12)  # The closest object is 0, the farthest is 1
         current_pointcloud = self.find_pointcloud(current_time)
 
-        
-        scale_value = get_scale_value(current_pointcloud, depth_map)
+        #scale_value = get_scale_value(current_pointcloud, depth_map)
         scale_map = get_scale_map(current_pointcloud, depth_map)
 
         scaled_depth_map_by_map = depth_map * scale_map
-        scaled_depth_map_by_value = depth_map * scale_value
-        
-        cloud_msg_map = self.pointcloud.create_cloud_msg(scaled_depth_map_by_map, current_time, self.camera.k_matrix, self.camera_frame)
+        #scaled_depth_map_by_value = depth_map * scale_value
+
+        cloud_msg_map = self.pointcloud.create_cloud_msg(scaled_depth_map_by_map, current_time, self.camera.k_matrix,
+                                                         self.camera_frame)
         self.pointcloud.publish_pointcloud(self.pub_pointcloud_map, cloud_msg_map)
-        cloud_msg_value = self.pointcloud.create_cloud_msg(scaled_depth_map_by_value, current_time, self.camera.k_matrix, self.camera_frame)
-        self.pointcloud.publish_pointcloud(self.pub_pointcloud_value, cloud_msg_value)
+        # cloud_msg_value = self.pointcloud.create_cloud_msg(scaled_depth_map_by_value, current_time,
+        #                                                    self.camera.k_matrix, self.camera_frame)
+        # self.pointcloud.publish_pointcloud(self.pub_pointcloud_value, cloud_msg_value)
 
         # MiDas depth map after scaling
         inverse_depth_map_by_map = 1.0 / (scaled_depth_map_by_map + 1e-9)
         colorized_depth_image_map = self.colorize_inverse_depth(inverse_depth_map_by_map)
-        self.camera.publish_image(colorized_depth_image_map, self.pub_scaled_depth_map) 
-        inverse_depth_map_by_value = 1.0 / (scaled_depth_map_by_value + 1e-9)
-        colorized_depth_image_value = self.colorize_inverse_depth(inverse_depth_map_by_value)
-        self.camera.publish_image(colorized_depth_image_value, self.pub_scaled_depth_value) 
-    
-
+        self.camera.publish_image(colorized_depth_image_map, self.pub_scaled_depth_map)
+        # inverse_depth_map_by_value = 1.0 / (scaled_depth_map_by_value + 1e-9)
+        # colorized_depth_image_value = self.colorize_inverse_depth(inverse_depth_map_by_value)
+        # self.camera.publish_image(colorized_depth_image_value, self.pub_scaled_depth_value)
 
     def find_pointcloud(self, image_time):
         if not self.cloud_buffer:
@@ -140,7 +140,7 @@ class MonocularDepthEstimatorNode:
             return None
 
         closest = min(
-            self.cloud_buffer, 
+            self.cloud_buffer,
             key=lambda x: abs((x[0] - image_time).to_sec())
         )
         rospy.loginfo(f"nejstarsi {self.cloud_buffer[0][0].to_sec()}")
@@ -148,8 +148,7 @@ class MonocularDepthEstimatorNode:
         rospy.loginfo(image_time.to_sec())
 
         _, pointcloud = closest
-        return pointcloud 
-
+        return pointcloud
 
     def colorize_inverse_depth(self, inverse_depth_map):
         inverse_depth_map = np.nan_to_num(inverse_depth_map, nan=0.0, posinf=0.0, neginf=0.0)
@@ -158,11 +157,6 @@ class MonocularDepthEstimatorNode:
         colorized = cv2.applyColorMap(normalized, cv2.COLORMAP_MAGMA)
         return colorized
 
-
-                 
-
-
-        
 
 if __name__ == '__main__':
     node_instance = MonocularDepthEstimatorNode()
