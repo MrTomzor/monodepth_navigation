@@ -29,7 +29,7 @@ windows:
   - navigation:
       layout: tiled
       panes:
-         - waitForHw; roslaunch monodepth_navigation navigation_node.launch
+         - waitForHw; roslaunch monodepth_navigation navigation_node.launch x_octogoal:=5 y_octogoal:=0 z_octogoal:=0 yaw_octogoal:=0
   - mapplan:
       layout: tiled
       panes:

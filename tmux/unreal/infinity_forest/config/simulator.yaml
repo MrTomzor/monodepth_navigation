@@ -15,13 +15,13 @@ world_name:
   # "cave"
   # "valley"
   # "forest"
-  # "infinite_forest"
+   "infinite_forest"
   # "warehouse"
   # "cave"
   # "erding_airbase"
-  # "temesvar"
-  "eletric_towers"
-  # "industrial_warehouse"
+  # "service_tunnel"
+  #"eletric_towers"
+  # "erding_airbase"
   # "race_1"
   # "race_2"
   # "service_tunnel"
@@ -57,9 +57,7 @@ sensors:
     rotation_yaw: 0.0
 
   lidar:
-    enabled: true 
-    # horizontal_rays: 256 # [-]
-    # vertical_rays: 128 # [-]
+    enabled: true
     horizontal_rays: 128 # [-]
     vertical_rays: 32 # [-]
     offset_x: 0.2 # [m]
