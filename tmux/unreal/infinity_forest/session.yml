@@ -24,22 +24,22 @@ windows:
   - monodepth:
       layout: tiled
       panes:
-        - waitForHw; roslaunch monodepth_navigation midas_node.launch
+        - waitForHw; roslaunch monodepth midas_node.launch
 
   - navigation:
       layout: tiled
       panes:
-         - waitForHw; roslaunch monodepth_navigation navigation_node.launch x_octogoal:=5 y_octogoal:=0 z_octogoal:=0 yaw_octogoal:=0
+         - waitForHw; roslaunch monodepth navigation_node.launch x_octogoal:=5 y_octogoal:=0 z_octogoal:=0 yaw_octogoal:=0
   - mapplan:
       layout: tiled
       panes:
-        - waitForHw; roslaunch monodepth_navigation own_mapplan.launch
+        - waitForHw; roslaunch monodepth own_mapplan.launch
           config_octomap_server:=./config/octomap_server.yaml
           config_octomap_planner:=./config/octomap_planner.yaml
-        # - waitForHw; roslaunch monodepth_navigation base_unreal_mapplan.launch
+        # - waitForHw; roslaunch monodepth base_unreal_mapplan.launch
           # Old from monospheres
-          # config_octomap_server:=/home/blueberry/mrs_apptainer/user_ros_workspace/src/monodepth_navigation/custom_configs/octomap_server.yaml
-          # config_octomap_planner:=/home/blueberry/mrs_apptainer/user_ros_workspace/src/monodepth_navigation/custom_configs/octomap_planner.yaml
+          # config_octomap_server:=/home/blueberry/mrs_apptainer/user_ros_workspace/src/monodepth/custom_configs/octomap_server.yaml
+          # config_octomap_planner:=/home/blueberry/mrs_apptainer/user_ros_workspace/src/monodepth/custom_configs/octomap_planner.yaml
           # Config from unreal basic session
           #config_octomap_server:=./custom_configs/octomap_server.yaml
           #config_octomap_planner:=./custom_configs/octomap_planner.yaml 
@@ -101,7 +101,7 @@ windows:
   # - monodepth:
   #     layout: tiled
   #     panes:
-  #       - waitForHw; roslaunch monodepth_navigation midas_node.launch
+  #       - waitForHw; roslaunch monodepth midas_node.launch
   # - rviz:
   #     layout: tiled
   #     panes:
@@ -111,7 +111,7 @@ windows:
   # - rosbag:
   #     layout: tiled
   #     panes: 
-  #       - rosbag play /home/blueberry/mrs_apptainer/user_ros_workspace/src/monodepth_navigation/tmux/bag_files/bag_files_2025-08-05-15-02-38.bag
+  #       - rosbag play /home/blueberry/mrs_apptainer/user_ros_workspace/src/monodepth/tmux/bag_files/bag_files_2025-08-05-15-02-38.bag
 
   
 

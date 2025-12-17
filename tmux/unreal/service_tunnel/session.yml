@@ -24,16 +24,16 @@ windows:
   - monodepth:
       layout: tiled
       panes:
-        - waitForHw; roslaunch monodepth_navigation midas_node.launch
+        - waitForHw; roslaunch monodepth midas_node.launch
 
   - navigation:
       layout: tiled
       panes:
-         - waitForHw; roslaunch monodepth_navigation navigation_node.launch x_octogoal:=-20 y_octogoal:=-6 z_octogoal:=-55.1 yaw_octogoal:=0
+         - waitForHw; roslaunch monodepth navigation_node.launch x_octogoal:=-20 y_octogoal:=-6 z_octogoal:=-55.1 yaw_octogoal:=0
   - mapplan:
       layout: tiled
       panes:
-        - waitForHw; roslaunch monodepth_navigation own_mapplan.launch
+        - waitForHw; roslaunch monodepth own_mapplan.launch
           config_octomap_server:=./config/octomap_server.yaml
           config_octomap_planner:=./config/octomap_planner.yaml
   - hw_api:
@@ -93,7 +93,7 @@ windows:
   # - monodepth:
   #     layout: tiled
   #     panes:
-  #       - waitForHw; roslaunch monodepth_navigation midas_node.launch
+  #       - waitForHw; roslaunch monodepth midas_node.launch
   # - rviz:
   #     layout: tiled
   #     panes:
@@ -103,7 +103,7 @@ windows:
   # - rosbag:
   #     layout: tiled
   #     panes: 
-  #       - rosbag play /home/blueberry/mrs_apptainer/user_ros_workspace/src/monodepth_navigation/tmux/bag_files/bag_files_2025-08-05-15-02-38.bag
+  #       - rosbag play /home/blueberry/mrs_apptainer/user_ros_workspace/src/monodepth/tmux/bag_files/bag_files_2025-08-05-15-02-38.bag
 
   
 

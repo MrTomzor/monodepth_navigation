@@ -24,16 +24,16 @@ windows:
   - monodepth:
       layout: tiled
       panes:
-        - waitForHw; roslaunch monodepth_navigation midas_node.launch
+        - waitForHw; roslaunch monodepth midas_node.launch
 
   - navigation:
       layout: tiled
       panes:
-         - waitForHw; roslaunch monodepth_navigation navigation_node.launch x_octogoal:=-27 y_octogoal:=-27 z_octogoal:=0 yaw_octogoal:=0
+         - waitForHw; roslaunch monodepth navigation_node.launch x_octogoal:=-27 y_octogoal:=-27 z_octogoal:=0 yaw_octogoal:=0
   - mapplan:
       layout: tiled
       panes:
-        - waitForHw; roslaunch monodepth_navigation own_mapplan.launch
+        - waitForHw; roslaunch monodepth own_mapplan.launch
           config_octomap_server:=./config/octomap_server.yaml
           config_octomap_planner:=./config/octomap_planner.yaml
   - hw_api:

@@ -15,7 +15,7 @@ windows:
   - gazebo:
       layout: tiled
       panes:
-        #- waitForRos; roslaunch mrs_uav_gazebo_simulation simulation.launch world_file:=`rospack find monodepth_navigation`/gworlds/world2.sdf gui:=true
+        #- waitForRos; roslaunch mrs_uav_gazebo_simulation simulation.launch world_file:=`rospack find monodepth`/gworlds/world2.sdf gui:=true
         - waitForRos; roslaunch mrs_uav_gazebo_simulation simulation.launch world_name:=forest gui:=true
         - waitForGazebo; rosservice call /mrs_drone_spawner/spawn "1 --$UAV_TYPE --enable-vio --enable-realsense-front --pos 2 2 2.5 -1.57"
         - waitForControl; gz camera -c gzclient_camera -f $UAV_NAME; history -s gz camera -c gzclient_camera -f $UAV_NAME
@@ -26,15 +26,15 @@ windows:
   - monodepth:
       layout: tiled
       panes:
-        - waitForHw; roslaunch monodepth_navigation midas_node.launch
+        - waitForHw; roslaunch monodepth midas_node.launch
   - navigation:
       layout: tiled
       panes:
-        - waitForHw; roslaunch monodepth_navigation navigation_node.launch
+        - waitForHw; roslaunch monodepth navigation_node.launch
   - infra_p:
       layout: tiled
       panes:
-        - waitForHw; roslaunch monodepth_navigation infra_node.launch
+        - waitForHw; roslaunch monodepth infra_node.launch
   - hw_api:
       layout: tiled
       panes:
@@ -74,8 +74,8 @@ windows:
   - rviz:
       layout: tiled
       panes:
-        # - waitForRos; roslaunch mrs_uav_core rviz.launch rviz_config:=/home/slon/user_ros_workspace/src/monodepth_navigation/rviz/rviz_config.rviz
-        - rosrun rviz rviz -d /home/blueberry/user_ros_workspace/src/monodepth_navigation/rviz/depth_debug.rviz
+        # - waitForRos; roslaunch mrs_uav_core rviz.launch rviz_config:=/home/slon/user_ros_workspace/src/monodepth/rviz/rviz_config.rviz
+        - rosrun rviz rviz -d /home/blueberry/user_ros_workspace/src/monodepth/rviz/depth_debug.rviz
         - waitForRos; roslaunch mrs_rviz_plugins load_robot.launch
         - waitForRos; roslaunch mrs_rviz_plugins rviz_interface.launch
 
