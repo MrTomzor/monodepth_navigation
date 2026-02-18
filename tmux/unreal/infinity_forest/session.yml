@@ -5,116 +5,64 @@ socket_name: mrs
 attach: false
 tmux_options: -f /etc/ctu-mrs/tmux.conf
 # you can modify these
-pre_window: export UAV_NAME=uav1; export RUN_TYPE=simulation; export UAV_TYPE=x500
-startup_window: monodepth
+startup_window: simulator
+pre_window: export UAV_NAME=uav1;
+            export USE_SIM_TIME="true";
+            export UAV_TYPE=x500;
+            export PLATFORM_CONFIG=`ros2 pkg prefix mrs_multirotor_simulator`/share/mrs_multirotor_simulator/config/mrs_uav_system/$UAV_TYPE.yaml;
+            export RMW_IMPLEMENTATION=rmw_zenoh_cpp
 windows:
-  - roscore:
+  - router:
       layout: tiled
       panes:
-        - roscore
+        - ros2 run rmw_zenoh_cpp rmw_zenohd
   - simulator:
       layout: tiled
       panes:
-        - waitForRos; roslaunch mrs_uav_unreal_simulation unreal_simulator.launch custom_config:=./config/simulator.yaml
-  - status:
-      layout: tiled
-      panes:
-        - waitForHw; roslaunch mrs_uav_status status.launch
-  
-  - monodepth:
-      layout: tiled
-      panes:
-        - waitForHw; roslaunch monodepth midas_node.launch
-
-  - navigation:
-      layout: tiled
-      panes:
-         - waitForHw; roslaunch monodepth navigation_node.launch x_octogoal:=5 y_octogoal:=0 z_octogoal:=0 yaw_octogoal:=0
-  - mapplan:
-      layout: tiled
-      panes:
-        - waitForHw; roslaunch monodepth own_mapplan.launch
-          config_octomap_server:=./config/octomap_server.yaml
-          config_octomap_planner:=./config/octomap_planner.yaml
-        # - waitForHw; roslaunch monodepth base_unreal_mapplan.launch
-          # Old from monospheres
-          # config_octomap_server:=/home/blueberry/mrs_apptainer/user_ros_workspace/src/monodepth/custom_configs/octomap_server.yaml
-          # config_octomap_planner:=/home/blueberry/mrs_apptainer/user_ros_workspace/src/monodepth/custom_configs/octomap_planner.yaml
-          # Config from unreal basic session
-          #config_octomap_server:=./custom_configs/octomap_server.yaml
-          #config_octomap_planner:=./custom_configs/octomap_planner.yaml 
+        - ros2 launch mrs_uav_flightforge_simulator flightforge_simulator.launch.py custom_config:=./config/simulator.yaml
   - hw_api:
       layout: tiled
       panes:
-        - waitForTime; roslaunch mrs_uav_unreal_simulation hw_api.launch
-  - vins_republisher:
+        - ros2 launch mrs_uav_flightforge_simulator hw_api.launch.py
+  - status:
       layout: tiled
       panes:
-        - waitForHw; roslaunch mrs_vins_republisher vins_republisher_openvins_unreal.launch
-  - open_vins:
+        - ros2 run mrs_uav_status status.sh
+  - core:
       layout: tiled
       panes:
-        - waitForHw; roslaunch mrs_open_vins_core simulation_unreal.launch
-  - change_odom_source:
-      layout: tiled
-      panes:
-        -  waitForControl; sleep 10; rosservice call /$UAV_NAME/estimation_manager/change_estimator "open_vins"
+        - ros2 launch mrs_uav_core core.launch.py
+          platform_config:=$PLATFORM_CONFIG
+          world_config:=./config/world_config.yaml
+          custom_config:=./config/custom_config.yaml
+          network_config:=./config/network_config.yaml
   - takeoff:
       layout: tiled
       panes:
-        - waitForHw; roslaunch mrs_uav_autostart automatic_start.launch
-        - waitForControl; rosservice call /$UAV_NAME/hw_api/arming 1; sleep 2; rosservice call /$UAV_NAME/hw_api/offboard
-        # - waitForControl; rosservice call /$UAV_NAME/hw_api/arming 1; rosservice call /$UAV_NAME/uav_manager/midair_activation
-  - control:
+        - ros2 launch mrs_uav_autostart automatic_start.launch.py custom_config:=./config/automatic_start.yaml
+        - waitForCore; ./takeoff.sh
+  - stereo:
       layout: tiled
       panes:
-        - waitForHw; roslaunch mrs_uav_core core.launch
-          platform_config:=`rospack find mrs_multirotor_simulator`/config/mrs_uav_system/$UAV_TYPE.yaml
-          custom_config:=./config/custom_config.yaml
-          world_config:=./config/world_config.yaml
-          network_config:=./config/network_config.yaml
+        - ros2 launch stereo_image_proc stereo_image_proc.launch.py namespace:=uav1/stereo
+  - vio:
+      layout: tiled
+      panes:
+        - ros2 launch mrs_open_vins_core open_vins.launch.py config_path:=`ros2 pkg prefix mrs_open_vins_core`/share/mrs_open_vins_core/config/simulation_flightforge/estimator_config.yaml
+  - vins_republisher:
+      layout: tiled
+      panes:
+        - ros2 launch mrs_vins_republisher vins_republisher.launch.py camera_pitch:=0 camera_roll:=0 camera_yaw:=0
+
   - rviz:
       layout: tiled
       panes:
-        - waitForControl; rosrun rviz rviz -d ./rviz.rviz
-        - waitForControl; roslaunch mrs_rviz_plugins load_robot.launch
-        - waitForControl; roslaunch mrs_rviz_plugins rviz_interface.launch
+        - ros2 run rviz2 rviz2 -d ./rviz.rviz --ros-args -p use_sim_time:=true
+  - reconfigure:
+      layaut: tiled
+      panes:
+        - ros2 run rqt_reconfigure rqt_reconfigure
   - layout:
       layout: tiled
       panes:
-        - waitForControl; sleep 5; ~/.i3/layout_manager.sh ./layout.json
-
-
-
-
-
-
-
-
-  # ----------------- rosbag -------------------
-
-  # - roscore:
-  #     layout: tiled
-  #     panes:
-  #       - roscore
- 
-  # - monodepth:
-  #     layout: tiled
-  #     panes:
-  #       - waitForHw; roslaunch monodepth midas_node.launch
-  # - rviz:
-  #     layout: tiled
-  #     panes:
-  #       - waitForControl; rosrun rviz rviz -d ./rviz.rviz
-  #       - waitForControl; roslaunch mrs_rviz_plugins load_robot.launch
-  #       - waitForControl; roslaunch mrs_rviz_plugins rviz_interface.launch
-  # - rosbag:
-  #     layout: tiled
-  #     panes: 
-  #       - rosbag play /home/blueberry/mrs_apptainer/user_ros_workspace/src/monodepth/tmux/bag_files/bag_files_2025-08-05-15-02-38.bag
-
-  
-
-
-
-    
+        - sleep 5; ~/.i3/layout_manager.sh ./layout.json

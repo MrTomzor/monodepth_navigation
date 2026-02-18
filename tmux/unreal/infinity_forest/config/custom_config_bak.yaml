@@ -1,10 +1,16 @@
+# GET ALL PARAMETERS USABLE FOR CUSTOM CONFIG BY RUNNING:
+## --------------------------------------------------------------
+## |          rosrun mrs_uav_core get_public_params.py          #
+## --------------------------------------------------------------
+
 mrs_uav_managers:
 
   estimation_manager:
 
+    # loaded state estimator plugins
     state_estimators: [
-     "gps_baro",
-     "open_vins"
+      "gps_baro",
+      "open_vins",
     ]
 
     initial_state_estimator: "gps_baro" # will be used as the first state estimator
@@ -64,7 +70,7 @@ mrs_uav_managers:
 
         corrections: [
           "pos_vio",
-          "vel_hw_api"
+          "vel_vio"
         ]
 
         pos_vio:
@@ -73,22 +79,24 @@ mrs_uav_managers:
           noise_unhealthy_coeff: 100.0 # covariance gets multiplied by this coefficient when correction is unhealthy (R)
           message:
             type: "nav_msgs/Odometry"
-            topic: "vins_republisher/odom" # without uav namespace
+            topic: "republisher_vio_front/odom_out" # without uav namespace
             limit: 
               delay: 1.0 # [s] messages with higher delay will flag correction as unhealthy
               time_since_last: 0.5 # [s] larger time step between messages will flag correction as unhealthy
 
           processors: [] # types of processors attached to this measurement
+
           transform:
             enabled: false
 
-        vel_hw_api:
+        vel_vio:
           state_id: 1 # 0 - position, 1 - velocity, 2 - acceleration
           noise: 1.0 # measurement noise covariance (R)
           noise_unhealthy_coeff: 100.0 # covariance gets multiplied by this coefficient when correction is unhealthy (R)
+          body_frame: true
           message:
-            type: "geometry_msgs/Vector3Stamped"
-            topic: "hw_api/velocity" # without uav namespace
+            type: "nav_msgs/Odometry"
+            topic: "republisher_vio_front/odom_out" # without uav namespace
             limit: 
               delay: 1.0 # [s] messages with higher delay will flag correction as unhealthy
               time_since_last: 0.5 # [s] larger time step between messages will flag correction as unhealthy
@@ -101,8 +109,6 @@ mrs_uav_managers:
 
           transform:
             enabled: false
-
-          body_frame: false
 
       # namespace of the heading estimator
       hdg_open_vins: # namespace of the heading estimator
@@ -129,20 +135,20 @@ mrs_uav_managers:
           noise_unhealthy_coeff: 100.0 # covariance gets multiplied by this coefficient when correction is unhealthy (R)
           message:
             type: "nav_msgs/Odometry"
-            topic: "vins_republisher/odom" # without uav namespace
+            topic: "republisher_vio_front/odom_out" # without uav namespace
             limit: 
               delay: 1.0 # [s] messages with higher delay will flag correction as unhealthy
               time_since_last: 0.5 # [s] larger time step between messages will flag correction as unhealthy
 
           processors: [] # types of processors attached to this measurement
+
           transform:
             enabled: false
-          init_hdg_in_zero: false
 
       # namespace of the lateral estimator
       lat_open_vins: # namespace of the lateral estimator
 
-        hdg_source_topic: "vio/hdg_vio/output" # [mrs_uav_state_estimation/EstimatorOutput]
+        hdg_source_topic: "open_vins/hdg_vio/output" # [mrs_uav_state_estimation/EstimatorOutput]
 
         max_flight_z: 100.0 # [m] maximum allowed flight Z (in the estimator frame)
 
@@ -164,20 +170,19 @@ mrs_uav_managers:
           "vel_vio"
         ]
 
-#mrs_uav_managers/estimation_manager/open_vins/lat_open_vins/pos_vio/transform/enabled
-
         pos_vio:
           state_id: 0 # 0 - position, 1 - velocity, 2 - acceleration
           noise: 0.01 # measurement noise covariance (R)
           noise_unhealthy_coeff: 100.0 # covariance gets multiplied by this coefficient when correction is unhealthy (R)
           message:
             type: "nav_msgs/Odometry"
-            topic: "vins_republisher/odom" # without uav namespace
+            topic: "republisher_vio_front/odom_out" # without uav namespace
             limit: 
               delay: 1.0 # [s] messages with higher delay will flag correction as unhealthy
               time_since_last: 0.5 # [s] larger time step between messages will flag correction as unhealthy
 
           processors: [] # types of processors attached to this measurement
+
           transform:
             enabled: false
 
@@ -188,20 +193,46 @@ mrs_uav_managers:
           body_frame: true # velocity is in body frame from open_vins
           message:
             type: "nav_msgs/Odometry"
-            topic: "vins_republisher/odom" # without uav namespace
+            topic: "republisher_vio_front/odom_out" # without uav namespace
             limit: 
               delay: 1.0 # [s] messages with higher delay will flag correction as unhealthy
               time_since_last: 0.5 # [s] larger time step between messages will flag correction as unhealthy
 
           processors: [] # types of processors attached to this measurement
+
           transform:
             enabled: false
+ 
+  uav_manager:
+
+    takeoff:
+
+      during_takeoff:
+        controller: "MpcController"
+        tracker: "LandoffTracker"
+
+      after_takeoff:
+        controller: "Se3Controller"
+        tracker: "MpcTracker"
+
+      takeoff_height: 10
+
+    midair_activation:
+
+      during_activation:
+        controller: "MidairActivationController"
+        tracker: "MidairActivationTracker"
+
+      after_activation:
+        controller: "Se3Controller"
+        tracker: "MpcTracker"
+
 
   constraint_manager:
 
     estimator_types: [
       "gps_baro",
-      "open_vins"
+      "open_vins",
     ]
 
     constraints: [
@@ -212,36 +243,37 @@ mrs_uav_managers:
 
     # list of allowed gains per odometry mode
     allowed_constraints:
-      gps_baro: ["slow", "medium", "fast"]
       open_vins: ["slow", "medium", "fast"]
+      gps_baro: ["slow", "medium", "fast"]
 
     # those gains will be used automatically when a localization mode switches
     # and the current gains are not in the allowed list (next paragraphs)
     default_constraints:
-      gps_baro: "slow"
-      open_vins: "slow"
+      open_vins: "medium"
+      gps_baro: "medium"
 
   gain_manager:
 
     estimator_types: [
+      "open_vins",
       "gps_baro",
-      "open_vins"
     ]
 
     gains: [
-      "supersoft"
+      "supersoft",
+      "soft",
     ]
 
     # list of allowed gains per odometry mode
     allowed_gains:
-      gps_baro: ["supersoft"]
-      open_vins: ["supersoft"]
+      open_vins: ["soft"]
+      gps_baro: ["soft"]
 
     # those gains will be used automatically when a localization mode switches
     # and the current gains are not in the allowed list (next paragraphs)
     default_gains:
-      gps_baro: "supersoft"
-      open_vins: "supersoft"
+      open_vins: "soft"
+      gps_baro: "soft"
 
   transform_manager:
 
@@ -254,7 +286,3 @@ mrs_uav_managers:
       utm_based: false # if true, will publish tf to utm_origin
       inverted: true # publish as inverted tf (the default for inverted mrs tf tree convention)
       republish_in_frames: [] # the odometry message will be transformed and republished in the specified frames
-      custom_child_frame_id:
-        enabled: false
-      custom_frame_id:
-        enabled: false

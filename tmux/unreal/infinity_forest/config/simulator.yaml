@@ -1,72 +1,83 @@
-uav_names: [
-  "uav1",
-]
+mrs_uav_flightforge_simulator:
+  uav_names: [
+    "uav1",
+  ]
 
-uav1:
-  frame: "a300"
-  type: "x500"
-  spawn:
-    x: 0.0
-    y: 0.0
-    z: 0.0
-    heading: 0.0
+  frames:
+    fcu:
+      publish_tf: false
 
-world_name:
-  # "cave"
-  # "valley"
-  # "forest"
-   "infinite_forest"
-  # "warehouse"
-  # "cave"
-  # "erding_airbase"
-  # "service_tunnel"
-  #"eletric_towers"
-  # "erding_airbase"
-  # "race_1"
-  # "race_2"
-  # "service_tunnel"
-  # "dead_spruce_forest"
+  uav1:
+    frame: "a300"
+    type: "x500"
+    spawn:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      heading: 0.0
 
-weather_type:
-  "sunny"
+  world_name: "forest"
+    # "cave"
+    # "valley"
+    # "forest"
+    # "infinite_forest"
+    # "warehouse"
+    # "cave"
+    # "erding_airbase"
+    # "service_tunnel"
+    # "eletric_towers"
+    # "erding_airbase"
+    # "race_1"
+    # "race_2"
+    # "service_tunnel"
+    # "dead_spruce_forest"
 
-sensors:
+  #weather_type:
+  #  "sunny"
 
-  rgb:
-    enabled: true
+  sensors:
 
-    rate: 30.0 # [Hz]
+    rgb:
+      enabled: true
 
-    width: 800 # [px]
-    height: 800 # [px]
-    fov: 120.0 # [deg]
+      rate: 30.0 # [Hz]
 
-    offset_x: 0.14 # [m]
-    offset_y: 0.0 # [m]
-    offset_z: 0.0 # [m]
+        #width: 800 # [px]
+        #height: 800 # [px]
+        #fov: 120.0 # [deg]
 
-    rotation_pitch: 30.0 # [deg]
-    rotation_yaw: 0.0 # [deg]
-    rotation_roll: 0.0 # [deg]
+        #offset_x: 0.14 # [m]
+        #offset_y: 0.0 # [m]
+        #offset_z: 0.0 # [m]
 
-  stereo:
-    width: 672 # [px]
-    height: 384 # [px]
-    enabled: true
-    rotation_pitch: 0.0
-    rotation_yaw: 0.0
+        #rotation_pitch: 30.0 # [deg]
+        #rotation_yaw: 0.0 # [deg]
+        #rotation_roll: 0.0 # [deg]
 
-  lidar:
-    enabled: true
-    horizontal_rays: 128 # [-]
-    vertical_rays: 32 # [-]
-    offset_x: 0.2 # [m]
-    offset_y: 0.0 # [m]
-    offset_z: -0.1 # [m]
-    rotation_pitch: 30.0 # [deg]
-    rotation_roll: 0.0 # [deg]
-    rotation_yaw: 0.0 # [deg]
-    lidar_segmented:
-      enabled: false 
-      rate: 10.0 # [Hz]
+    stereo:
+      width: 672 # [px]
+      height: 384 # [px]
+      enabled: true
+      rotation_pitch: 0.0
+      rotation_yaw: 0.0
 
+    lidar:
+      enabled: true
+      horizontal_rays: 128 # [-]
+      vertical_rays: 32 # [-]
+      offset_x: 0.2 # [m]
+      offset_y: 0.0 # [m]
+      offset_z: -0.1 # [m]
+      rotation_pitch: 30.0 # [deg]
+      rotation_roll: 0.0 # [deg]
+      rotation_yaw: 0.0 # [deg]
+      lidar_segmented:
+        enabled: false
+        rate: 10.0 # [Hz]
+
+  graphics_settings: "low"
+  realtime_factor: 1.0 # [-]
+  daytime:
+
+    hour: 15
+    minute: 30
