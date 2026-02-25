@@ -20,7 +20,8 @@ setup(
     license='MIT',
     entry_points={
         'console_scripts': [
-            'test_script = monodepth.test_script:main',
+            'monocular_depth_estimator = monodepth.monocular_depth_estimator:main',
+            'navigation_controller = monodepth.navigation_controller:main',
         ],
     },
 )

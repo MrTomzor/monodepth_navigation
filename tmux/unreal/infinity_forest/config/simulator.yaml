@@ -75,7 +75,7 @@ mrs_uav_flightforge_simulator:
         enabled: false
         rate: 10.0 # [Hz]
 
-  graphics_settings: "low"
+  graphics_settings: "medium"
   realtime_factor: 1.0 # [-]
   daytime:
 

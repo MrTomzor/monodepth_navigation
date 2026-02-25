@@ -1,8 +1,7 @@
-import rospy
 import numpy as np
 from scipy.interpolate import griddata
 
-   
+
 def get_scale_map(pointcloud_2d, depth_map):
     points = []
     scales = []
@@ -24,21 +23,19 @@ def get_scale_map(pointcloud_2d, depth_map):
     grid_x, grid_y = np.meshgrid(np.arange(W), np.arange(H))
     grid_coords = np.stack((grid_x, grid_y), axis=-1)
 
-
     if len(points) == 0:
-        rospy.logwarn("No points available for interpolation")
-        return np.ones(depth_map.shape, dtype=np.float32) 
+        print("WARNING: No points available for interpolation")
+        return np.ones(depth_map.shape, dtype=np.float32)
     elif len(points) < 3:
-        rospy.loginfo("Not enough points for Delaunay-based linear interpolation — using nearest only")
+        print("INFO: Not enough points for Delaunay-based linear interpolation — using nearest only")
         scale_map = griddata(points, scales, grid_coords, method='nearest')
     else:
-        rospy.loginfo("Using Delaunay-based linear interpolation")
+        print("INFO: Using Delaunay-based linear interpolation")
         scale_map_linear = griddata(points, scales, grid_coords, method='linear')
         scale_map_nearest = griddata(points, scales, grid_coords, method='nearest')
         scale_map = np.where(np.isnan(scale_map_linear), scale_map_nearest, scale_map_linear)
 
     return scale_map
-
 
 
 def get_scale_value(pointcloud_2d, depth_map, points_count=3):
@@ -52,10 +49,10 @@ def get_scale_value(pointcloud_2d, depth_map, points_count=3):
                 pairs.append((midas_depth, d))
 
     if len(pairs) == 0:
-        return 1 # old value
+        return 1
 
     pairs.sort(key=lambda x: x[1])
-    closest_pairs = pairs[:points_count] 
+    closest_pairs = pairs[:points_count]
 
     abstract_depths = np.array([p[0] for p in closest_pairs])
     real_depths = np.array([p[1] for p in closest_pairs])
@@ -64,8 +61,4 @@ def get_scale_value(pointcloud_2d, depth_map, points_count=3):
     if np.isfinite(new_scale) and 0.01 < new_scale < 1000.0:
         return new_scale
     else:
-        return 1 # old value
-                
-                
-
-
+        return 1

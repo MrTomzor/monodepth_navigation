@@ -29,6 +29,9 @@ mrs_uav_flightforge_simulator:
       rate: 30 # [Hz]
 
       enabled: true
+      offset_x: 5.0 # [m]
+      offset_y: 0.0 # [m]
+      offset_z: -0.9 # [m]
 
       rgb_segmented:
         enabled: false

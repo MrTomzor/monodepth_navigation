@@ -41,6 +41,18 @@ windows:
       layout: tiled
       panes:
         - ros2 run mrs_uav_status status.sh
+  - monodepth:
+      layout: tiled
+      panes:
+        - ros2 run monodepth_navigation monocular_depth_estimator --ros-args -p use_sim_time:=true
+  - navigation:
+      layout: tiled
+      panes:
+        - ros2 run monodepth_navigation navigation_controller --ros-args -p use_sim_time:=true -p x_octogoal:=5.0 -p y_octogoal:=0.0 -p z_octogoal:=0.0 -p yaw_octogoal:=0.0
+  - map_plan:
+      layout: tiled
+      panes:
+        - ros2 launch mrs_octomap_mapping_planning mapplan.launch.py custom_config:=./config/mapplan_config.yaml depth_camera_0:=/midas/pointcloud_by_map
   - core:
       layout: tiled
       panes:

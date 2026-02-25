@@ -1,128 +1,141 @@
-#!/usr/bin/env python3
-
-import rospy
+import rclpy
+from rclpy.node import Node
 from sensor_msgs.msg import PointCloud2
 from mrs_msgs.msg import VelocityReferenceStamped
-from cv_bridge import CvBridge
+from mrs_msgs.srv import Vec4
+from std_srvs.srv import Empty
 import tf2_ros
 import numpy as np
-from monodepth_navigation.pointcloud_processor import PointCloudProcessor
 from collections import deque
-from mrs_msgs.srv import Vec4, Vec4Request
-import tf.transformations as tft
-from std_srvs.srv import Trigger, TriggerRequest
-from std_srvs.srv import Empty
+
+from monodepth.pointcloud_processor import PointCloudProcessor
 
 
-class NavigationControllerNode:
+class NavigationControllerNode(Node):
     def __init__(self):
-        rospy.init_node('navigation_controller', anonymous=True)
+        super().__init__('navigation_controller')
         self.init_params()
         self.init_tf()
         self.init_state()
         self.init_publishers()
         self.init_subscribers()
+        self.init_services()
         self.init_timers()
-        rospy.loginfo("Node Started")
-        self.goto_srv = rospy.ServiceProxy("/uav1/octomap_planner/goto", Vec4)
-        self.goto_srv.wait_for_service()
+        self.get_logger().info("Navigation Node Started")
 
     def init_params(self):
-        # self.safe_distance = rospy.get_param("safe_distance", 3.0)
-        self.camera_frame = rospy.get_param("target_frame", "uav1/fcu_untilted")
-        self.input_pointcloud_topic = rospy.get_param("input_pointcloud_topic", "/midas/pointcloud")
-        self.output_velocity_topic = rospy.get_param("output_velocity_topic",
-                                                     "/uav1/control_manager/velocity_reference")
-        self.x_octogoal = rospy.get_param("x_octogoal", 0.0)
-        self.y_octogoal = rospy.get_param("y_octogoal", 0.0)
-        self.z_octogoal = rospy.get_param("z_octogoal", 0.0)
-        self.yaw_octogoal = rospy.get_param("yaw_octogoal", 0.0)
+        self.declare_parameter("target_frame", "uav1/fcu_untilted")
+        self.declare_parameter("input_pointcloud_topic", "/midas/pointcloud_by_map")
+        self.declare_parameter("output_velocity_topic", "/uav1/control_manager/velocity_reference")
+
+        self.declare_parameter("x_octogoal", 0.0)
+        self.declare_parameter("y_octogoal", 0.0)
+        self.declare_parameter("z_octogoal", 0.0)
+        self.declare_parameter("yaw_octogoal", 0.0)
+
+        self.camera_frame = self.get_parameter("target_frame").value
+        self.input_pointcloud_topic = self.get_parameter("input_pointcloud_topic").value
+        self.output_velocity_topic = self.get_parameter("output_velocity_topic").value
+
+        self.x_octogoal = self.get_parameter("x_octogoal").value
+        self.y_octogoal = self.get_parameter("y_octogoal").value
+        self.z_octogoal = self.get_parameter("z_octogoal").value
+        self.yaw_octogoal = self.get_parameter("yaw_octogoal").value
+
         self.world_frame = "uav1/local_origin"
         self.body_frame = "uav1/fcu_untilted"
 
     def init_tf(self):
-        self.bridge = CvBridge()
         self.tf_buffer = tf2_ros.Buffer()
-        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
     def init_state(self):
         self.drone_size = 0.02
         self.near_threshold = 3.0
         self.far_threshold = 12.0
-
         self.still_eps = 0.05
         self.last_pos = None
-
         self.traveled_path = deque(maxlen=10)
-
         self.pointcloud = PointCloudProcessor(self.tf_buffer)
         self.latest_pointcloud = None
 
     def init_publishers(self):
-        self.pub_velocity = rospy.Publisher(self.output_velocity_topic, VelocityReferenceStamped, queue_size=10)
+        self.pub_velocity = self.create_publisher(VelocityReferenceStamped, self.output_velocity_topic, 10)
 
     def init_subscribers(self):
-        rospy.Subscriber(self.input_pointcloud_topic, PointCloud2, self.pointcloud_callback)
+        self.create_subscription(PointCloud2, self.input_pointcloud_topic, self.pointcloud_callback, 1)
+
+    def init_services(self):
+        self.goto_srv = self.create_client(Vec4, "/uav1/octomap_planner/goto")
+        self.clear_srv = self.create_client(Empty, "/uav1/octomap_server/reset_map")
+
+        if not self.goto_srv.wait_for_service(timeout_sec=2.0):
+            self.get_logger().warn("Octomap goto service not available yet!")
 
     def init_timers(self):
-        # self.timer = rospy.Timer(rospy.Duration(0.001), self.callback)
-        rospy.Timer(rospy.Duration(3), self.octoplanner)
+        self.create_timer(3.0, self.octoplanner)
 
-    def callback(self, event):
+    def reactive_navigation(self):
         if not self.latest_pointcloud:
-            # rospy.logwarn("There is no pointcloud to navigate\n")
             return
         near_left, near_front, near_right, far_left, far_right = self.get_distances_from_sectors(self.latest_pointcloud)
         self.decide_action(near_left, near_front, near_right, far_left, far_right)
         self.latest_pointcloud = None
 
-    def octoplanner(self, event):
+    def octoplanner(self):
         current_position = self.get_xyz_from_tf()
         if current_position is None:
             return
 
         if not self.is_moved(current_position):
-            rospy.loginfo("not moved")
-            #self.clear_octomap()
-            if len(self.traveled_path) != 0 and len(self.traveled_path) != 1:
+            self.get_logger().info("Not moved")
+            # self.clear_octomap()
+            if len(self.traveled_path) > 1:
                 self.traveled_path.pop()
                 latest_position = self.traveled_path.pop()
                 self.send_goto(latest_position[0], latest_position[1], latest_position[2], self.yaw_octogoal)
             else:
                 self.send_velocity_command(vx=-0.4, vy=0.0, vz=0.0, yaw_rate=0.0)
-
             return
 
         self.traveled_path.append(current_position)
+        self.get_logger().info(f"Target X: {self.x_octogoal}")
 
-        rospy.loginfo(self.x_octogoal)
         self.send_goto(current_position[0] + self.x_octogoal,
                        current_position[1] + self.y_octogoal,
                        current_position[2],
                        self.yaw_octogoal)
-
         self.last_pos = current_position
 
     def clear_octomap(self):
-        try:
-            rospy.wait_for_service("/uav1/octomap_server/reset_map", timeout=1.0)
-            clear_srv = rospy.ServiceProxy("/uav1/octomap_server/reset_map", Empty)
-            clear_srv()
-            rospy.logwarn("reset map")
-        except Exception as e:
-            rospy.logwarn("reset map failed")
+        if self.clear_srv.wait_for_service(timeout_sec=1.0):
+            req = Empty.Request()
+            self.clear_srv.call_async(req)
+            self.get_logger().warn("Reset map called")
+        else:
+            self.get_logger().warn("Reset map service not available")
 
     def send_goto(self, x, y, z, yaw):
-        req = Vec4Request()
-        req.goal[0] = x
-        req.goal[1] = y
-        req.goal[2] = z
-        req.goal[3] = yaw
+        if not self.goto_srv.wait_for_service(timeout_sec=1.0):
+            self.get_logger().error("Goto service not available")
+            return
+
+        req = Vec4.Request()
+        req.goal[0] = float(x)
+        req.goal[1] = float(y)
+        req.goal[2] = float(z)
+        req.goal[3] = float(yaw)
+
+        # Асинхронный вызов, чтобы не заблокировать таймер
+        future = self.goto_srv.call_async(req)
+        future.add_done_callback(self.goto_response_callback)
+
+    def goto_response_callback(self, future):
         try:
-            resp = self.goto_srv(req)
-            rospy.loginfo(f"Service response: {resp}, req: {req}")
-        except rospy.ServiceException as e:
-            rospy.logerr("Service call failed: %s", e)
+            response = future.result()
+            self.get_logger().info(f"Goto service response: {response.message}")
+        except Exception as e:
+            self.get_logger().error(f"Service call failed: {e}")
 
     def is_moved(self, current_position):
         if self.last_pos is None:
@@ -133,46 +146,44 @@ class NavigationControllerNode:
         dy = current_position[1] - self.last_pos[1]
         dz = current_position[2] - self.last_pos[2]
         dist = (dx * dx + dy * dy + dz * dz) ** 0.5
-        if dist < self.still_eps:
-            return False
-        else:
-            return True
+        return dist >= self.still_eps
 
     def get_xyz_from_tf(self):
         try:
-            tf = self.tf_buffer.lookup_transform(self.world_frame, self.body_frame, rospy.Time(0), rospy.Duration(0.2))
-            t = tf.transform.translation
+            now = rclpy.time.Time()
+            tf_msg = self.tf_buffer.lookup_transform(self.world_frame, self.body_frame, now,
+                                                     rclpy.duration.Duration(seconds=0.2))
+            t = tf_msg.transform.translation
             return (t.x, t.y, t.z)
         except Exception as e:
-            rospy.logwarn_throttle(2.0, "TF lookup failed: %s" % e)
+            self.get_logger().warn(f"TF lookup failed: {e}", throttle_duration_sec=2.0)
         return None
 
     def pointcloud_callback(self, cloud_msg):
         raw_pointcloud = self.pointcloud.read_pointcloud(cloud_msg)
-        self.latest_pointcloud = self.pointcloud.change_points_frame(self.camera_frame, cloud_msg.header.frame_id,
-                                                                     self.camera_frame, raw_pointcloud,
-                                                                     cloud_msg.header.stamp)
+        self.latest_pointcloud = self.pointcloud.change_points_frame(
+            self.camera_frame, cloud_msg.header.frame_id, self.camera_frame, raw_pointcloud, cloud_msg.header.stamp)
 
     def decide_action(self, near_left, near_front, near_right, far_left, far_right):
-        rospy.loginfo(
-            f"\n\nDISTS: L = {near_left:.2f}   F = {near_front:.2f}  R = {near_right:.2f}  WL = {far_left:.2f}  WR = {far_right:.2f} ")
+        self.get_logger().info(
+            f"DISTS: L={near_left:.2f} F={near_front:.2f} R={near_right:.2f} WL={far_left:.2f} WR={far_right:.2f}")
 
         if near_front <= self.near_threshold and near_front >= self.drone_size:
             if far_left > far_right:
-                rospy.loginfo("Obstacle ahead! Turning left")
+                self.get_logger().info("Obstacle ahead! Turning left")
                 self.send_velocity_command(vx=0.0, vy=0.0, vz=0.0, yaw_rate=0.6)
             else:
-                rospy.loginfo("Obstacle ahead! Turning right")
+                self.get_logger().info("Obstacle ahead! Turning right")
                 self.send_velocity_command(vx=0.0, vy=0.0, vz=0.0, yaw_rate=-0.6)
         elif near_front <= self.far_threshold:
             if near_left > near_right:
-                rospy.loginfo("Obstacle ahead (far), gently veering left")
+                self.get_logger().info("Obstacle ahead (far), gently veering left")
                 self.send_velocity_command(vx=0.1, vy=0.1, vz=0.0, yaw_rate=0.2)
             else:
-                rospy.loginfo("Obstacle ahead (far), gently veering right")
+                self.get_logger().info("Obstacle ahead (far), gently veering right")
                 self.send_velocity_command(vx=0.1, vy=-0.1, vz=0.0, yaw_rate=-0.2)
         else:
-            rospy.loginfo("Path clear, flying straight")
+            self.get_logger().info("Path clear, flying straight")
             self.send_velocity_command(vx=0.4, vy=0.0, vz=0.0, yaw_rate=0.0)
 
     def get_distances_from_sectors(self, pointcloud):
@@ -207,19 +218,30 @@ class NavigationControllerNode:
 
     def send_velocity_command(self, vx, vy, vz, yaw_rate):
         msg = VelocityReferenceStamped()
-        msg.header.stamp = rospy.Time.now()
+        msg.header.stamp = self.get_clock().now().to_msg()
         msg.header.frame_id = self.camera_frame
 
-        msg.reference.velocity.x = vx
-        msg.reference.velocity.y = vy
-        msg.reference.velocity.z = vz
+        msg.reference.velocity.x = float(vx)
+        msg.reference.velocity.y = float(vy)
+        msg.reference.velocity.z = float(vz)
 
         msg.reference.use_heading_rate = True
-        msg.reference.heading_rate = yaw_rate
+        msg.reference.heading_rate = float(yaw_rate)
 
         self.pub_velocity.publish(msg)
 
 
+def main(args=None):
+    rclpy.init(args=args)
+    node = NavigationControllerNode()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+
 if __name__ == '__main__':
-    node_instance = NavigationControllerNode()
-    rospy.spin()
+    main()
