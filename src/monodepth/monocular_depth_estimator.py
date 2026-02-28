@@ -58,14 +58,14 @@ class MonocularDepthEstimatorNode(Node):
 
 
 
-        # self.declare_parameter("output_mask_vis_topic", "/midas/mask_visualization")
-        # # Propeller mask coordinates (assuming 640x480 resolution).
-        # # Format: [x, y, width, height] for each rectangle sequentially.
-        # # - Left prop:  [0, 170, 220, 100] (starts at left edge x=0)
-        # # - Right prop: [440, 170, 220, 100] (ends at right edge x=640)
-        # self.declare_parameter("mask_rectangles", [0, 100, 250, 80, 440, 100, 250, 80])
-        # self.output_mask_vis_topic = self.get_parameter("output_mask_vis_topic").value
-        # self.mask_rects = self.get_parameter("mask_rectangles").value
+        self.declare_parameter("output_mask_vis_topic", "/midas/mask_visualization")
+        # Propeller mask coordinates (assuming 640x480 resolution).
+        # Format: [x, y, width, height] for each rectangle sequentially.
+        # - Left prop:  [0, 170, 220, 100] (starts at left edge x=0)
+        # - Right prop: [440, 170, 220, 100] (ends at right edge x=640)
+        self.declare_parameter("mask_rectangles", [0, 100, 250, 80, 440, 100, 250, 80])
+        self.output_mask_vis_topic = self.get_parameter("output_mask_vis_topic").value
+        self.mask_rects = self.get_parameter("mask_rectangles").value
 
 
 
@@ -94,7 +94,11 @@ class MonocularDepthEstimatorNode(Node):
         # self.pub_scaled_depth_value = self.create_publisher(Image, self.output_scaled_depth_map_topic_name_value, qos)
         self.pub_pointcloud_map = self.create_publisher(PointCloud2, self.output_pointcloud_topic_map_name, qos)
         # self.pub_pointcloud_value = self.create_publisher(PointCloud2, self.output_pointcloud_topic_value_name, qos)
-        # self.pub_mask_vis = self.create_publisher(Image, self.output_mask_vis_topic, qos)
+        self.pub_mask_vis = self.create_publisher(Image, self.output_mask_vis_topic, qos)
+
+
+        self.pub_cam_info_relay = self.create_publisher(CameraInfo, '/uav1/octomap_server/depth_camera/camera_info_in',qos)
+
 
     def init_subscribers(self):
         qos = 1
@@ -122,6 +126,8 @@ class MonocularDepthEstimatorNode(Node):
 
     def camera_info_callback(self, cam_info_msg):
         self.camera.set_camera_k_info(cam_info_msg)
+
+        self.pub_cam_info_relay.publish(cam_info_msg)
 
     def pointcloud_callback(self, cloud_msg):
         if self.camera.k_matrix is None:
@@ -163,14 +169,14 @@ class MonocularDepthEstimatorNode(Node):
         scale_map = get_scale_map(current_pointcloud, depth_map)
         scaled_depth_map_by_map = depth_map * scale_map
 
-        # masked_scaled_depth_map_by_map = self.put_mask_on_depth_map(scaled_depth_map_by_map, current_image.copy())
-        # cloud_msg_map = self.pointcloud.create_cloud_msg(
-        #     masked_scaled_depth_map_by_map, current_time, self.camera.k_matrix, self.camera_frame
-        # )
-
+        masked_scaled_depth_map_by_map = self.put_mask_on_depth_map(scaled_depth_map_by_map, current_image.copy())
         cloud_msg_map = self.pointcloud.create_cloud_msg(
-            scaled_depth_map_by_map, current_time, self.camera.k_matrix, self.camera_frame
+            masked_scaled_depth_map_by_map, current_time, self.camera.k_matrix, self.camera_frame
         )
+
+        # cloud_msg_map = self.pointcloud.create_cloud_msg(
+        #     scaled_depth_map_by_map, current_time, self.camera.k_matrix, self.camera_frame
+        # )
 
 
         self.pointcloud.publish_pointcloud(self.pub_pointcloud_map, cloud_msg_map)
