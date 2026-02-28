@@ -31,7 +31,8 @@ windows:
   - map_plan:
       layout: tiled
       panes:
-        - ros2 launch mrs_octomap_mapping_planning mapplan.launch.py custom_config:=./config/mapplan_config.yaml lidar_3d_0:=lidar/points lidar_3d_0_free:=lidar/points_free
+#        - ros2 launch mrs_octomap_mapping_planning mapplan.launch.py custom_config:=./config/mapplan_config.yaml lidar_3d_0:=lidar/points lidar_3d_0_free:=lidar/points_free
+        - ros2 launch mrs_octomap_mapping_planning mapplan.launch.py custom_config:=./config/mapplan_config.yaml depth_camera_0:=/midas/  depth_camera_0_info:=/uav1/rgb/camera_info
         - 'history -s ./goto_octomap.py'
   - static_tf:
       layout: tiled

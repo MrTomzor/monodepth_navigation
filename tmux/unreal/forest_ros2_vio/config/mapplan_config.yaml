@@ -8,7 +8,9 @@ mrs_octomap_server:
     sensor_params:
 
       3d_lidar:
+        n_sensors: 0
 
+      depth_camera:
         n_sensors: 1
 
         sensor_0:
@@ -29,12 +31,12 @@ mrs_octomap_server:
             free_ray_distance_unknown: 10.0 # [m] ray length for raycasting
 
           decimation:
-            enabled: false
+            enabled: true
             voxel_size: 0.4 # [m]
 
           crop_robot_body:
             enabled: true
-            box_size: 1.0 # [m]
+            box_size: 1.5 # [m]
 
 mrs_octomap_planner:
 
