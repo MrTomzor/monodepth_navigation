@@ -12,7 +12,7 @@ def get_scale_map(pointcloud_2d, depth_map):
             midas_depth = depth_map[v, u]
             if midas_depth > 0 and np.isfinite(midas_depth):
                 scale = vins_depth / midas_depth
-                if 0.001 < scale < 1000:
+                if 1e-5 < scale < 1e8:
                     points.append([u, v])
                     scales.append(scale)
 
