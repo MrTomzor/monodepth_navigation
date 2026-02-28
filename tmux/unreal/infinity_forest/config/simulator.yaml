@@ -1,82 +1,63 @@
+uav_names: [
+  "uav1",
+]
+
+frames:
+  fcu:
+    publish_tf: false
+
+uav1:
+
+  frame: "x500"
+  type: "x500"
+  spawn:
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    heading: 0.0
+
 mrs_uav_flightforge_simulator:
-  uav_names: [
-    "uav1",
-  ]
-
-  frames:
-    fcu:
-      publish_tf: false
-
-  uav1:
-    frame: "a300"
-    type: "x500"
-    spawn:
-      x: 0.0
-      y: 0.0
-      z: 0.0
-      heading: 0.0
-
-  world_name: "forest"
-    # "cave"
-    # "valley"
-    # "forest"
-    # "infinite_forest"
-    # "warehouse"
-    # "cave"
-    # "erding_airbase"
-    # "service_tunnel"
-    # "eletric_towers"
-    # "erding_airbase"
-    # "race_1"
-    # "race_2"
-    # "service_tunnel"
-    # "dead_spruce_forest"
-
-  #weather_type:
-  #  "sunny"
 
   sensors:
 
-    rgb:
-      enabled: true
-
-      rate: 30.0 # [Hz]
-
-        #width: 800 # [px]
-        #height: 800 # [px]
-        #fov: 120.0 # [deg]
-
-        #offset_x: 0.14 # [m]
-        #offset_y: 0.0 # [m]
-        #offset_z: 0.0 # [m]
-
-        #rotation_pitch: 30.0 # [deg]
-        #rotation_yaw: 0.0 # [deg]
-        #rotation_roll: 0.0 # [deg]
-
-    stereo:
-      width: 672 # [px]
-      height: 384 # [px]
-      enabled: true
-      rotation_pitch: 0.0
-      rotation_yaw: 0.0
-
     lidar:
+
       enabled: true
-      horizontal_rays: 128 # [-]
-      vertical_rays: 32 # [-]
-      offset_x: 0.2 # [m]
+
+    rgb:
+
+      rate: 30 # [Hz]
+
+      enabled: true
+      offset_x: 5.0 # [m]
       offset_y: 0.0 # [m]
-      offset_z: -0.1 # [m]
-      rotation_pitch: 30.0 # [deg]
-      rotation_roll: 0.0 # [deg]
-      rotation_yaw: 0.0 # [deg]
-      lidar_segmented:
+      offset_z: -0.9 # [m]
+
+      rgb_segmented:
         enabled: false
         rate: 10.0 # [Hz]
 
+      depth:
+        enabled: false
+
+    stereo:
+      enabled: false
+
   graphics_settings: "medium"
+
   realtime_factor: 1.0 # [-]
+
+  # world_name: "valley" # works in Lite
+  # world_name: "warehouse" # works in Lite
+
+  # TODO
+  # world_name: "cave" # does not work
+  # world_name: "dead_spruce_forest" # does not work
+  # world_name: "infinite_forest" # does not work
+  world_name: "forest" # does not work
+
+  # weather_type: "cloudy"
+
   daytime:
 
     hour: 15

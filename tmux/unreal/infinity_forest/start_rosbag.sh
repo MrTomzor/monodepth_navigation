@@ -6,11 +6,10 @@ SCRIPT=$(readlink -f $0)
 SCRIPTPATH=`dirname $SCRIPT`
 cd "$SCRIPTPATH"
 
-export TMUX_SESSION_NAME=simulation
+export TMUX_SESSION_NAME=bag_simulation
 export TMUX_SOCKET_NAME=mrs
 
-# start tmuxinator
-tmuxinator start -p ./session.yml
+tmuxinator start -p ./rosbag_session.yml
 
 # if we are not in tmux
 if [ -z $TMUX ]; then
@@ -22,6 +21,6 @@ if [ -z $TMUX ]; then
 else
 
   # switch to the newly-started session
-  tmux detach-client -E "tmux -L $TMUX_SOCKET_NAME a -t $TMUX_SESSION_NAME" 
+  tmux detach-client -E "tmux -L $TMUX_SOCKET_NAME a -t $TMUX_SESSION_NAME"
 
 fi
