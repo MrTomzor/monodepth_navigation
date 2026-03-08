@@ -6,7 +6,7 @@ attach: false
 tmux_options: -f /etc/ctu-mrs/tmux.conf
 # you can modify these
 startup_window: simulator
-pre_window: export UAV_NAME=uav10; export USE_SIM_TIME="true"; export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+pre_window: export UAV_NAME=uav1; export USE_SIM_TIME="true"; export RMW_IMPLEMENTATION=rmw_zenoh_cpp
 windows:
   - router:
       layout: tiled
@@ -24,6 +24,11 @@ windows:
       layout: tiled
       panes:
         - ros2 launch mrs_open_vins_core open_vins.launch.py config_path:=`ros2 pkg prefix mrs_open_vins_core`/share/mrs_open_vins_core/config/simulation_flightforge/estimator_config.yaml uav_name:=$UAV_NAME
+  - vio_repub:
+      layout: tiled
+      panes:
+        - ros2 launch mrs_vins_republisher vins_republisher.launch.py uav_name:=$UAV_NAME camera_pitch:=0 camera_roll:=0 camera_yaw:=0
+
   - map_plan:
       layout: tiled
       panes:
@@ -48,13 +53,15 @@ windows:
   - monodepth:
       layout: tiled
       panes:
-        - ros2 launch monodepth_navigation monodepth.launch.py
-
+        - ros2 launch monodepth_navigation monodepth.launch.py uav_name:=$UAV_NAME
   - navigation:
       layout: tiled
       panes:
-        - ros2 launch monodepth_navigation navigation.launch.py x_octogoal:=5.0 y_octogoal:=0.0 z_octogoal:=0.0 yaw_octogoal:=0.0
-
+        - ros2 launch monodepth_navigation navigation.launch.py uav_name:=$UAV_NAME x_octogoal:=5.0 y_octogoal:=0.0 z_octogoal:=0.0 yaw_octogoal:=0.0
+  - evaluation:
+      layout: tiled
+      panes:
+        - ./python-env/bin/python3 src/monodepth/evaluator.py
   - commands:
       layout: tiled
       panes:
