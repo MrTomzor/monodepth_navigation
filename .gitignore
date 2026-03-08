@@ -1,13 +1,45 @@
+# =========================
+# ROS 2 & Colcon
+# =========================
+build/
+install/
+log/
+logs/
+*.bag
+*.db3
+*.pcap
 
 # =========================
-# Python
+# CMake & C++
+# =========================
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+compile_commands.json
+*.o
+*.so
+*.a
+
+# =========================
+# Python Virtual Environment
+# =========================
+python-env/
+venv/
+.venv/
+env/
+.env
+
+# =========================
+# Python Cache & Packages
 # =========================
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
 *.egg-info/
 .eggs/
+.pytest_cache/
+.coverage
 
 # =========================
 # PyCharm / IDEs
@@ -16,28 +48,31 @@ __pycache__/
 .vscode/
 *.iml
 
-
-
 # =========================
 # OS
 # =========================
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
 Thumbs.db
+ehthumbs.db
+desktop.ini
 
 # =========================
-# Temporary / cache
+# Temporary / Cache
 # =========================
 *.swp
+*.swo
+*~
 *.tmp
 .cache/
 
-# =========================
-# ROS tools
-# =========================
-*.bag
-*.db3
 
-# =========================
-# Optional: logs
-# =========================
-logs/
+forest_flight_lidar_01/
+tmux/unreal/infinity_forest/forest_flight_lidar_01/
+*.mcap
+metadata.yaml
+
+
