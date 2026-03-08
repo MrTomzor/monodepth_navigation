@@ -1,0 +1,61 @@
+#!/usr/bin/env python3
+
+import os
+import launch
+from launch_ros.actions import Node
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
+from ament_index_python.packages import get_package_share_directory
+
+
+def generate_launch_description():
+    ld = launch.LaunchDescription()
+    pkg_name = "monodepth_navigation"
+
+
+    venv_path = os.path.expanduser('~/ros2_workspace/src/monodepth_navigation/python-env/bin/python3')
+
+
+    uav_name = LaunchConfiguration('uav_name')
+    x_octogoal = LaunchConfiguration('x_octogoal')
+    y_octogoal = LaunchConfiguration('y_octogoal')
+    z_octogoal = LaunchConfiguration('z_octogoal')
+    yaw_octogoal = LaunchConfiguration('yaw_octogoal')
+
+    ld.add_action(DeclareLaunchArgument(
+        'uav_name', default_value=os.getenv('UAV_NAME', "uav1"),
+        description="The UAV name used for namespacing."
+    ))
+    ld.add_action(DeclareLaunchArgument('x_octogoal', default_value='5.0', description="X target for Octomap planner"))
+    ld.add_action(DeclareLaunchArgument('y_octogoal', default_value='0.0', description="Y target for Octomap planner"))
+    ld.add_action(DeclareLaunchArgument('z_octogoal', default_value='0.0', description="Z target for Octomap planner"))
+    ld.add_action(
+        DeclareLaunchArgument('yaw_octogoal', default_value='0.0', description="Yaw target for Octomap planner"))
+
+
+    navigation_node = Node(
+        package=pkg_name,
+        namespace=uav_name,
+        name='navigation_controller',
+        executable='navigation_controller.py',
+        prefix=[venv_path + ' '],
+        parameters=[
+            {'use_sim_time': True},
+
+            {'target_frame': [uav_name, '/fcu_untilted']},
+            {'output_velocity_topic': ['/', uav_name, '/control_manager/velocity_reference']},
+            {'world_frame': [uav_name, '/local_origin']},
+            {'body_frame': [uav_name, '/fcu_untilted']},
+
+            {'input_pointcloud_topic': '/midas/pointcloud_by_map'},
+
+            {'x_octogoal': x_octogoal},
+            {'y_octogoal': y_octogoal},
+            {'z_octogoal': z_octogoal},
+            {'yaw_octogoal': yaw_octogoal},
+        ]
+    )
+
+    ld.add_action(navigation_node)
+
+    return ld

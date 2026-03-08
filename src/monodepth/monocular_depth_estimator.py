@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image, PointCloud2, CameraInfo
@@ -21,65 +22,43 @@ from monodepth.camera_processor import CameraProcessor
 class MonocularDepthEstimatorNode(Node):
     def __init__(self):
         super().__init__('monodepth_estimator')
-
         self.timer_cb_group = MutuallyExclusiveCallbackGroup()
         self.subscriber_cb_group = MutuallyExclusiveCallbackGroup()
-
         self.init_params()
         self.init_tf()
         self.init_state()
         self.init_publishers()
         self.init_subscribers()
         self.init_timer()
-
         self.get_logger().info("Node Started (MiDaS Depth Only Mode)")
 
     def init_state(self):
         self.midas = MidasExtension(model_type="DPT_Large")
         self.camera = CameraProcessor(self.bridge, logger=self.get_logger())
-
-
         self.scale = 1
         self.cloud_buffer = deque(maxlen=30)
         self.pointcloud = PointCloudProcessor(self.tf_buffer)
 
     def init_params(self):
         self.declare_parameter("output_depth_map_topic", "/midas/depth_view")
-        self.declare_parameter("input_img_topic", "/uav1/rgb/image_raw")
-        self.declare_parameter("input_camera_info_topic", "/uav1/rgb/camera_info")
-        self.declare_parameter("camera_frame", "uav1/rgb")
-
+        self.declare_parameter("input_img_topic", "rgb/image_raw")
+        self.declare_parameter("input_camera_info_topic", "rgb/camera_info")
+        self.declare_parameter("camera_frame", "rgb")
 
         self.output_depth_map_topic_name = self.get_parameter("output_depth_map_topic").value
         self.input_img_topic_name = self.get_parameter("input_img_topic").value
         self.input_rgbd_color_cam_info_topic_name = self.get_parameter("input_camera_info_topic").value
         self.camera_frame = self.get_parameter("camera_frame").value
 
-
-
-
-        self.declare_parameter("output_mask_vis_topic", "/midas/mask_visualization")
-        # Propeller mask coordinates (assuming 640x480 resolution).
-        # Format: [x, y, width, height] for each rectangle sequentially.
-        # - Left prop:  [0, 170, 220, 100] (starts at left edge x=0)
-        # - Right prop: [440, 170, 220, 100] (ends at right edge x=640)
         self.declare_parameter("mask_rectangles", [0, 100, 250, 80, 440, 100, 250, 80])
-        self.output_mask_vis_topic = self.get_parameter("output_mask_vis_topic").value
         self.mask_rects = self.get_parameter("mask_rectangles").value
 
-
-
-
         self.declare_parameter("output_scaled_depth_map_topic_map", "/midas/scaled_depth_view_map")
-        # self.declare_parameter("output_scaled_depth_map_topic_value", "/midas/scaled_depth_view_value")
         self.declare_parameter("output_pointcloud_topic_map", "/midas/pointcloud_by_map")
-        # self.declare_parameter("output_pointcloud_topic_value", "/midas/pointcloud_by_value")
-        # self.declare_parameter("input_pointcloud_topic", "/uav1/ov_msckf/points_slam")
-        self.declare_parameter("input_pointcloud_topic", "/uav1/lidar/points")
+        self.declare_parameter("input_pointcloud_topic", "lidar/points")
+
         self.output_scaled_depth_map_topic_name_map = self.get_parameter("output_scaled_depth_map_topic_map").value
-        # self.output_scaled_depth_map_topic_name_value = self.get_parameter("output_scaled_depth_map_topic_value").value
         self.output_pointcloud_topic_map_name = self.get_parameter("output_pointcloud_topic_map").value
-        # self.output_pointcloud_topic_value_name = self.get_parameter("output_pointcloud_topic_value").value
         self.input_pointclouds_topic_name = self.get_parameter("input_pointcloud_topic").value
 
     def init_tf(self):
@@ -94,10 +73,6 @@ class MonocularDepthEstimatorNode(Node):
         # self.pub_scaled_depth_value = self.create_publisher(Image, self.output_scaled_depth_map_topic_name_value, qos)
         self.pub_pointcloud_map = self.create_publisher(PointCloud2, self.output_pointcloud_topic_map_name, qos)
         # self.pub_pointcloud_value = self.create_publisher(PointCloud2, self.output_pointcloud_topic_value_name, qos)
-        self.pub_mask_vis = self.create_publisher(Image, self.output_mask_vis_topic, qos)
-
-
-        self.pub_cam_info_relay = self.create_publisher(CameraInfo, '/uav1/octomap_server/depth_camera/camera_info_in',qos)
 
 
     def init_subscribers(self):
@@ -127,7 +102,6 @@ class MonocularDepthEstimatorNode(Node):
     def camera_info_callback(self, cam_info_msg):
         self.camera.set_camera_k_info(cam_info_msg)
 
-        self.pub_cam_info_relay.publish(cam_info_msg)
 
     def pointcloud_callback(self, cloud_msg):
         if self.camera.k_matrix is None:
@@ -194,7 +168,6 @@ class MonocularDepthEstimatorNode(Node):
 
                 depth_map[y:y_end, x:x_end] = np.nan
                 cv2.rectangle(current_image, (x, y), (x_end, y_end), (0, 0, 0), -1)
-        self.camera.publish_image(current_image, self.pub_mask_vis)
         return depth_map
 
     def msg_time_to_sec(self, msg_stamp):

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import PointCloud2
@@ -24,26 +25,31 @@ class NavigationControllerNode(Node):
         self.get_logger().info("Navigation Node Started")
 
     def init_params(self):
-        self.declare_parameter("target_frame", "uav1/fcu_untilted")
+
+        self.declare_parameter("target_frame", "fcu_untilted")
         self.declare_parameter("input_pointcloud_topic", "/midas/pointcloud_by_map")
-        self.declare_parameter("output_velocity_topic", "/uav1/control_manager/velocity_reference")
+        self.declare_parameter("output_velocity_topic", "control_manager/velocity_reference")
+
+        self.declare_parameter("world_frame", "local_origin")
+        self.declare_parameter("body_frame", "fcu_untilted")
 
         self.declare_parameter("x_octogoal", 0.0)
         self.declare_parameter("y_octogoal", 0.0)
         self.declare_parameter("z_octogoal", 0.0)
         self.declare_parameter("yaw_octogoal", 0.0)
 
+        # Читаем параметры
         self.camera_frame = self.get_parameter("target_frame").value
         self.input_pointcloud_topic = self.get_parameter("input_pointcloud_topic").value
         self.output_velocity_topic = self.get_parameter("output_velocity_topic").value
+
+        self.world_frame = self.get_parameter("world_frame").value
+        self.body_frame = self.get_parameter("body_frame").value
 
         self.x_octogoal = self.get_parameter("x_octogoal").value
         self.y_octogoal = self.get_parameter("y_octogoal").value
         self.z_octogoal = self.get_parameter("z_octogoal").value
         self.yaw_octogoal = self.get_parameter("yaw_octogoal").value
-
-        self.world_frame = "uav1/local_origin"
-        self.body_frame = "uav1/fcu_untilted"
 
     def init_tf(self):
         self.tf_buffer = tf2_ros.Buffer()
@@ -66,8 +72,15 @@ class NavigationControllerNode(Node):
         self.create_subscription(PointCloud2, self.input_pointcloud_topic, self.pointcloud_callback, 1)
 
     def init_services(self):
-        self.goto_srv = self.create_client(Vec4, "/uav1/octomap_planner/goto")
-        self.clear_srv = self.create_client(Empty, "/uav1/octomap_server/reset_map")
+        ns = self.get_namespace()
+        if ns == '/':
+            ns = ''
+
+        goto_topic = f"{ns}/octomap_planner/goto"
+        clear_topic = f"{ns}/octomap_server/reset_map"
+
+        self.goto_srv = self.create_client(Vec4, goto_topic)
+        self.clear_srv = self.create_client(Empty, clear_topic)
 
         if not self.goto_srv.wait_for_service(timeout_sec=2.0):
             self.get_logger().warn("Octomap goto service not available yet!")
