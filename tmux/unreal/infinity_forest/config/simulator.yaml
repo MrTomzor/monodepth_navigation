@@ -1,12 +1,12 @@
 uav_names: [
-  "uav10",
+  "uav1",
 ]
 
 frames:
   fcu:
     publish_tf: false
 
-uav10:
+uav1:
 
   frame: "x500"
   type: "x500"
