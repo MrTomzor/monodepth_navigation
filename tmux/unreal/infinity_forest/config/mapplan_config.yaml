@@ -2,48 +2,53 @@ mrs_octomap_server:
 
   octomap_server:
 
-    resolution: 0.4 # [m]
+    resolution: &voxel_res 0.8 # [m]
+
+    sensor_model:
+      hit: 0.62
+      miss: 0.45
+      min: 0.12
+      max: 0.90
 
     # for point cloud raycasting
     sensor_params:
 
       3d_lidar:
-        n_sensors: 0
-
-      depth_camera:
         n_sensors: 1
 
         sensor_0:
 
-          max_range: 20.0 # [m] max range of points to be included as occupied, free space is updated up to min(max_range, free_ray_distance)
+          max_range: 20.0 # [m] max range of points to be included as occupied
           free_ray_distance: 10.0 # [m] max distance for free space raycasting
 
           vertical_fov_angle: 1.57 # [rad]
 
-          # fallback values used for free space raycasting for missing data, uses pointcloud dimensions from the incoming message by default
           horizontal_rays: 128 # [-]
           vertical_rays: 64 # [-]
 
-          # what to do when data in the organized pointcloud is missing (is nan)
           unknown_rays:
-            update_free_space: true # update free space when data at the specific point is missing?
-            clear_occupied: true # clear occupied voxels using unknown rays? BEWARE, setting this to true is very DANGEROUS
-            free_ray_distance_unknown: 10.0 # [m] ray length for raycasting
+            update_free_space: true
+            clear_occupied: true
+            free_ray_distance_unknown: 10.0
 
           decimation:
             enabled: true
-            voxel_size: 0.4 # [m]
+            voxel_size: *voxel_res # [m]
 
           crop_robot_body:
             enabled: true
             box_size: 1.5 # [m]
+
+      depth_camera:
+        n_sensors: 0
 
 mrs_octomap_planner:
 
   octomap_planner:
 
     planning_tree:
-      resolution: 0.4
+
+      resolution: *voxel_res
 
     distance_transform:
       submap_distance: 20.0 # [m] from the UAV into all directions
