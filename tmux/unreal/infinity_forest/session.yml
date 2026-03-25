@@ -5,7 +5,7 @@ socket_name: mrs
 attach: false
 tmux_options: -f /etc/ctu-mrs/tmux.conf
 # you can modify these
-startup_window: simulator
+startup_window: monodepth
 pre_window: export UAV_NAME=uav1; export USE_SIM_TIME="true"; export RMW_IMPLEMENTATION=rmw_zenoh_cpp
 windows:
   - router:
@@ -58,10 +58,10 @@ windows:
       layout: tiled
       panes:
         - ros2 launch monodepth_navigation navigation.launch.py uav_name:=$UAV_NAME x_octogoal:=5.0 y_octogoal:=0.0 z_octogoal:=0.0 yaw_octogoal:=0.0
-  - evaluation:
-      layout: tiled
-      panes:
-        - ./python-env/bin/python3 src/monodepth/evaluator.py
+#  - evaluation:
+#      layout: tiled
+#      panes:
+#        - $HOME/ros2_workspace/src/monodepth_navigation/python-env/bin/python3 $HOME/ros2_workspace/src/monodepth_navigation/src/monodepth/evaluator.py
   - commands:
       layout: tiled
       panes:
@@ -69,7 +69,8 @@ windows:
   - goto:
       layout: tiled
       panes:
-        - 'history -s ros2 service call /$UAV_NAME/octomap_planner/goto mrs_msgs/srv/Vec4 "goal: {x: 0.0, y: 60.0, z: 2.0, w: 0.0}"'
+#        - 'history -s ros2 service call /$UAV_NAME/octomap_planner/goto mrs_msgs/srv/Vec4 "goal: {x: 0.0, y: 60.0, z: 2.0, w: 0.0}"'
+        - 'history -s ros2 service call /uav1/octomap_planner/goto mrs_msgs/srv/Vec4 "{goal: {x: -100.0, y: 0.0, z: 2.0, w: 0.0}}""'
   - rviz:
       layout: tiled
       panes:
