@@ -70,8 +70,12 @@ desktop.ini
 .cache/
 
 
+# =========================
+# Project Data
+# =========================
 forest_flight_lidar_01/
 tmux/unreal/infinity_forest/forest_flight_lidar_01/
+tmux/unreal/infinity_forest/data/
 *.mcap
 metadata.yaml
 
