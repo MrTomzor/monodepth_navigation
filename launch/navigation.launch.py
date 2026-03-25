@@ -28,7 +28,7 @@ def generate_launch_description():
     ))
     ld.add_action(DeclareLaunchArgument('x_octogoal', default_value='5.0', description="X target for Octomap planner"))
     ld.add_action(DeclareLaunchArgument('y_octogoal', default_value='0.0', description="Y target for Octomap planner"))
-    ld.add_action(DeclareLaunchArgument('z_octogoal', default_value='0.0', description="Z target for Octomap planner"))
+    ld.add_action(DeclareLaunchArgument('z_octogoal', default_value='2.0', description="Z target for Octomap planner"))
     ld.add_action(
         DeclareLaunchArgument('yaw_octogoal', default_value='0.0', description="Yaw target for Octomap planner"))
 

@@ -57,7 +57,7 @@ class MonocularDepthEstimatorNode(Node):
         self.input_rgbd_color_cam_info_topic_name = self.get_parameter("input_camera_info_topic").value
         self.camera_frame = self.get_parameter("camera_frame").value
 
-        self.declare_parameter("mask_rectangles", [0, 100, 250, 80, 440, 100, 250, 80])
+        self.declare_parameter("mask_rectangles", [0, 100, 250, 80, 400, 100, 400, 80])
         self.mask_rects = self.get_parameter("mask_rectangles").value
 
         self.declare_parameter("output_scaled_depth_map_topic_map", "/midas/scaled_depth_view_map")
