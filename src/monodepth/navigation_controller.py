@@ -33,12 +33,12 @@ class NavigationControllerNode(Node):
         self.declare_parameter("world_frame", "local_origin")
         self.declare_parameter("body_frame", "fcu_untilted")
 
-        self.declare_parameter("x_octogoal", 0.0)
+        self.declare_parameter("x_octogoal", 5.0)
         self.declare_parameter("y_octogoal", 0.0)
-        self.declare_parameter("z_octogoal", 0.0)
+        self.declare_parameter("z_octogoal", 2.0)
         self.declare_parameter("yaw_octogoal", 0.0)
 
-        # Читаем параметры
+
         self.camera_frame = self.get_parameter("target_frame").value
         self.input_pointcloud_topic = self.get_parameter("input_pointcloud_topic").value
         self.output_velocity_topic = self.get_parameter("output_velocity_topic").value
@@ -59,6 +59,13 @@ class NavigationControllerNode(Node):
         self.drone_size = 0.02
         self.near_threshold = 3.0
         self.far_threshold = 12.0
+
+        self.is_reactive = True # if True - navigation mode set to reactive navigation else navigation mode set to octomap planer
+
+        self.yaw_gain = 1.5
+        self.target_reached_dist = 2.0
+        self.current_position = None
+
         self.still_eps = 0.05
         self.last_pos = None
         self.traveled_path = deque(maxlen=10)
@@ -86,7 +93,10 @@ class NavigationControllerNode(Node):
             self.get_logger().warn("Octomap goto service not available yet!")
 
     def init_timers(self):
-        self.create_timer(3.0, self.octoplanner)
+        if self.is_reactive:
+            self.reactive_timer = self.create_timer(0.001, self.reactive_navigation)
+        else:
+            self.create_timer(3.0, self.octoplanner)
 
     def reactive_navigation(self):
         if not self.latest_pointcloud:
@@ -102,7 +112,6 @@ class NavigationControllerNode(Node):
 
         if not self.is_moved(current_position):
             self.get_logger().info("Not moved")
-            # self.clear_octomap()
             if len(self.traveled_path) > 1:
                 self.traveled_path.pop()
                 latest_position = self.traveled_path.pop()
@@ -112,12 +121,19 @@ class NavigationControllerNode(Node):
             return
 
         self.traveled_path.append(current_position)
-        self.get_logger().info(f"Target X: {self.x_octogoal}")
 
-        self.send_goto(current_position[0] + self.x_octogoal,
-                       current_position[1] + self.y_octogoal,
-                       current_position[2],
-                       self.yaw_octogoal)
+
+        target_x = self.x_octogoal
+        target_y = self.y_octogoal
+        target_z = self.z_octogoal
+
+        self.get_logger().info(f"Target X={target_x}, Y={target_y}, Z={target_z}")
+        self.send_goto(target_x, target_y, target_z, self.yaw_octogoal)
+
+        # self.send_goto(current_position[0] + self.x_octogoal,
+        #                current_position[1] + self.y_octogoal,
+        #                current_position[2],
+        #                self.yaw_octogoal)
         self.last_pos = current_position
 
     def clear_octomap(self):
@@ -167,7 +183,13 @@ class NavigationControllerNode(Node):
             tf_msg = self.tf_buffer.lookup_transform(self.world_frame, self.body_frame, now,
                                                      rclpy.duration.Duration(seconds=0.2))
             t = tf_msg.transform.translation
-            return (t.x, t.y, t.z)
+            r = tf_msg.transform.rotation
+
+            siny_cosp = 2 * (r.w * r.z + r.x * r.y)
+            cosy_cosp = 1 - 2 * (r.y * r.y + r.z * r.z)
+            yaw = np.arctan2(siny_cosp, cosy_cosp)
+
+            return (t.x, t.y, t.z, yaw)
         except Exception as e:
             self.get_logger().warn(f"TF lookup failed: {e}", throttle_duration_sec=2.0)
         return None
@@ -181,7 +203,28 @@ class NavigationControllerNode(Node):
         self.get_logger().info(
             f"DISTS: L={near_left:.2f} F={near_front:.2f} R={near_right:.2f} WL={far_left:.2f} WR={far_right:.2f}")
 
-        if near_front <= self.near_threshold and near_front >= self.drone_size:
+        current_position = self.get_xyz_from_tf()
+        if current_position is None:
+            current_position = self.current_position
+
+        if current_position is None:
+            return
+
+        curr_x, curr_y, curr_z, curr_yaw = current_position
+
+        target_x = self.x_octogoal
+        target_y = self.y_octogoal
+
+        dx = target_x - curr_x
+        dy = target_y - curr_y
+        dist_to_goal = np.sqrt(dx ** 2 + dy ** 2)
+
+        target_yaw_global = np.arctan2(dy, dx)
+
+        yaw_error = target_yaw_global - curr_yaw
+        yaw_error = (yaw_error + np.pi) % (2 * np.pi) - np.pi
+
+        if self.near_threshold >= near_front >= self.drone_size:
             if far_left > far_right:
                 self.get_logger().info("Obstacle ahead! Turning left")
                 self.send_velocity_command(vx=0.0, vy=0.0, vz=0.0, yaw_rate=0.6)
@@ -196,8 +239,18 @@ class NavigationControllerNode(Node):
                 self.get_logger().info("Obstacle ahead (far), gently veering right")
                 self.send_velocity_command(vx=0.1, vy=-0.1, vz=0.0, yaw_rate=-0.2)
         else:
-            self.get_logger().info("Path clear, flying straight")
-            self.send_velocity_command(vx=0.4, vy=0.0, vz=0.0, yaw_rate=0.0)
+            if dist_to_goal < 2.0:
+                self.get_logger().info("Goal achieved, staying still")
+                self.send_velocity_command(vx=0.0, vy=0.0, vz=0.0, yaw_rate=0.0)
+                return
+
+            if abs(yaw_error) < 0.05:
+                cmd_yaw_rate = 0.0
+            else:
+                cmd_yaw_rate = np.clip(self.yaw_gain * yaw_error, -0.8, 0.8)
+
+            self.send_velocity_command(vx=0.4, vy=0.0, vz=0.0, yaw_rate=cmd_yaw_rate)
+            self.get_logger().info(f"Path clear, flying straight with yaw: {cmd_yaw_rate}")
 
     def get_distances_from_sectors(self, pointcloud):
         near_left = near_front = near_right = far_left = far_right = float('inf')
