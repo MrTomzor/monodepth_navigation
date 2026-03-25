@@ -12,7 +12,7 @@ class MidasExtension:
     
         midas_transforms = torch.hub.load("intel-isl/MiDaS", "transforms")
 
-        if model_type == "DPT_Large" or model_type == "DPT_Hybrid":
+        if model_type.startswith("DPT_"):
             self.transform = midas_transforms.dpt_transform
         else:
             self.transform = midas_transforms.small_transform
@@ -27,8 +27,14 @@ class MidasExtension:
         # Prediction and resize to original resolution
         with torch.no_grad():
             prediction = self.midas(input_batch)#.squeeze()
+
+            if len(prediction.shape) == 3:
+                prediction = prediction.unsqueeze(1)
+            elif len(prediction.shape) == 2:
+                prediction = prediction.unsqueeze(0).unsqueeze(0)
+
             prediction = torch.nn.functional.interpolate(
-                prediction.unsqueeze(1),
+                prediction,
                 size=img.shape[:2],
                 mode="bicubic",
                 align_corners=False,

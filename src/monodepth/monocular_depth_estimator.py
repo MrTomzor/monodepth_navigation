@@ -33,7 +33,14 @@ class MonocularDepthEstimatorNode(Node):
         self.get_logger().info("Node Started (MiDaS Depth Only Mode)")
 
     def init_state(self):
-        self.midas = MidasExtension(model_type="DPT_Large")
+
+        # self.midas = MidasExtension(model_type="DPT_SwinV2_L_384")  # does not work
+        self.midas = MidasExtension(model_type="DPT_BEiT_L_512")
+        # self.midas = MidasExtension(model_type="DPT_Large")
+        # self.midas = MidasExtension(model_type="DPT_Hybrid")
+        # self.midas = MidasExtension(model_type="MiDaS_small")
+
+
         self.camera = CameraProcessor(self.bridge, logger=self.get_logger())
         self.scale = 1
         self.cloud_buffer = deque(maxlen=30)
