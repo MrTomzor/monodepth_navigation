@@ -39,6 +39,9 @@ class NavigationControllerNode(Node):
         self.declare_parameter("yaw_octogoal", 0.0)
 
 
+        self.is_reactive = self.get_parameter("is_reactive").value  # if True - navigation mode set to reactive navigation else navigation mode set to octomap planer
+
+
         self.camera_frame = self.get_parameter("target_frame").value
         self.input_pointcloud_topic = self.get_parameter("input_pointcloud_topic").value
         self.output_velocity_topic = self.get_parameter("output_velocity_topic").value
@@ -60,7 +63,6 @@ class NavigationControllerNode(Node):
         self.near_threshold = 3.0
         self.far_threshold = 12.0
 
-        self.is_reactive = True # if True - navigation mode set to reactive navigation else navigation mode set to octomap planer
 
         self.yaw_gain = 1.5
         self.target_reached_dist = 2.0

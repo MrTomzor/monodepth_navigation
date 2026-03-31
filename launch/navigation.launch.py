@@ -17,6 +17,7 @@ def generate_launch_description():
 
 
     uav_name = LaunchConfiguration('uav_name')
+    is_reactive = LaunchConfiguration('is_reactive')
     x_octogoal = LaunchConfiguration('x_octogoal')
     y_octogoal = LaunchConfiguration('y_octogoal')
     z_octogoal = LaunchConfiguration('z_octogoal')
@@ -26,6 +27,13 @@ def generate_launch_description():
         'uav_name', default_value=os.getenv('UAV_NAME', "uav1"),
         description="The UAV name used for namespacing."
     ))
+
+    ld.add_action(DeclareLaunchArgument(
+        'is_reactive',
+        default_value='false',
+        description="Whether to use reactive navigation or octomap planner"
+    ))
+
     ld.add_action(DeclareLaunchArgument('x_octogoal', default_value='5.0', description="X target for Octomap planner"))
     ld.add_action(DeclareLaunchArgument('y_octogoal', default_value='0.0', description="Y target for Octomap planner"))
     ld.add_action(DeclareLaunchArgument('z_octogoal', default_value='2.0', description="Z target for Octomap planner"))
@@ -41,7 +49,7 @@ def generate_launch_description():
         prefix=[venv_path + ' '],
         parameters=[
             {'use_sim_time': True},
-
+            {'is_reactive': is_reactive},
             {'target_frame': [uav_name, '/fcu_untilted']},
             {'output_velocity_topic': ['/', uav_name, '/control_manager/velocity_reference']},
             {'world_frame': [uav_name, '/local_origin']},
