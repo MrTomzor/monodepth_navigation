@@ -38,6 +38,8 @@ class NavigationControllerNode(Node):
         self.declare_parameter("z_octogoal", 2.0)
         self.declare_parameter("yaw_octogoal", 0.0)
 
+        self.declare_parameter("is_reactive", False)
+
 
         self.is_reactive = self.get_parameter("is_reactive").value  # if True - navigation mode set to reactive navigation else navigation mode set to octomap planer
 
