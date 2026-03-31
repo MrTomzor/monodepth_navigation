@@ -42,6 +42,7 @@ install(
   PROGRAMS
     src/monodepth/monocular_depth_estimator.py
     src/monodepth/navigation_controller.py
+    src/monodepth/image_undistorter.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

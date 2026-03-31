@@ -57,8 +57,13 @@ windows:
   - navigation:
       layout: tiled
       panes:
-#        - ros2 launch monodepth_navigation navigation.launch.py uav_name:=$UAV_NAME x_octogoal:=5.0 y_octogoal:=0.0 z_octogoal:=0.0 yaw_octogoal:=0.0
         - ros2 launch monodepth_navigation navigation.launch.py uav_name:=$UAV_NAME x_octogoal:=50.0 y_octogoal:=0.0 z_octogoal:=2.0 yaw_octogoal:=0.0
+  - undistorter:
+      layout: tiled
+      panes:
+        - ros2 launch monodepth_navigation undistorter.launch.py uav_name:=$UAV_NAME use_custom:=true
+
+#        - ros2 launch monodepth_navigation undistorter.launch.py uav_name:=$UAV_NAME use_custom:=false input_topic:=chess input_camera_info_topic:=chess_info output_topic:=chess_rectified distortion_coeffs:="[-0.55, 0.08, 0.0, 0.0, 0.0]"
 #  - evaluation:
 #      layout: tiled
 #      panes:
@@ -84,3 +89,11 @@ windows:
       layout: tiled
       panes:
         - sleep 5; ~/.i3/layout_manager.sh ./layout.json
+
+
+
+#  - image_test:
+#      layout: tiled
+#      panes:
+#        - ros2 run image_publisher image_publisher_node --ros-args -p filename:=$HOME/Desktop/chess.jpg -r image_raw:=/$UAV_NAME/chess -r camera_info:=/$UAV_NAME/chess_info
+#        - 'ros2 topic pub -r 10 /$UAV_NAME/chess_info sensor_msgs/msg/CameraInfo "{header: {frame_id: camera}, k: [500.0, 0.0, 640.0, 0.0, 500.0, 360.0, 0.0, 0.0, 1.0], p: [500.0, 0.0, 640.0, 0.0, 0.0, 500.0, 360.0, 0.0, 0.0, 0.0, 1.0, 0.0]}"'
