@@ -90,23 +90,23 @@ class MonocularDepthEstimatorNode(Node):
 
     def init_subscribers(self):
         qos = 1
+        print(f"Subscribe to {self.input_img_topic_name}")
         self.create_subscription(
             Image, self.input_img_topic_name, self.image_callback, qos,
             callback_group=self.subscriber_cb_group
         )
+        print(f"Subscribe to {self.input_rgbd_color_cam_info_topic_name}")
         self.create_subscription(
             CameraInfo, self.input_rgbd_color_cam_info_topic_name, self.camera_info_callback, qos,
             callback_group=self.subscriber_cb_group
         )
-
+        print(f"Subscribe to {self.input_pointclouds_topic_name}")
         self.create_subscription(
             PointCloud2, self.input_pointclouds_topic_name, self.pointcloud_callback, qos,
             callback_group=self.subscriber_cb_group
         )
     def init_timer(self):
-        self.timer = self.create_timer(
-            0.01, self.compute_midas_pointcloud,
-            callback_group=self.timer_cb_group
+        self.timer = self.create_timer(0.01, self.compute_midas_pointcloud,callback_group=self.timer_cb_group
         )
 
     def image_callback(self, image_msg):
