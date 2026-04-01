@@ -91,6 +91,15 @@ input=(
 '
   'PersonPlanner' 'ros2 launch path_planner planner.launch.py
 '
+  'Monodepth' '- ros2 launch monodepth_navigation monodepth.launch.py uav_name:=$UAV_NAME
+'
+  'Navigation' '- ros2 launch monodepth_navigation navigation.launch.py uav_name:=$UAV_NAME x_octogoal:=100.0 y_octogoal:=0.0 z_octogoal:=2.0 yaw_octogoal:=0.0
+'
+  'Undistorter' '- ros2 launch monodepth_navigation undistorter.launch.py uav_name:=$UAV_NAME use_custom:=false
+'
+  'Map_Plan' '- ros2 launch mrs_octomap_mapping_planning mapplan.launch.py custom_config:=./config/mapplan_config.yaml lidar_3d_0:=/midas/pointcloud_by_map uav_name:=$UAV_NAME
+'
+
 # do NOT modify the command list below
   'EstimDiag' 'waitForCore; ros2 topic echo /'"$UAV_NAME"'/estimation_manager/diagnostics --flow-style
 '
@@ -188,7 +197,9 @@ done
 # send commands
 for ((i=0; i < ${#cmds[*]}; i++));
 do
-  $TMUX_BIN send-keys -t $SESSION_NAME:$(($i+1)) "cd $SCRIPTPATH;${pre_input};${cmds[$i]}"
+  $TMUX_BIN send-keys -t $SESSION_NAME:$(($i+1)) "cd $SCRIPTPATH;
+${pre_input};
+${cmds[$i]}"
 done
 
 # identify the index of the init window
