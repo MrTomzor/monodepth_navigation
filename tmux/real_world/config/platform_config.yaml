@@ -1,0 +1,5 @@
+# from thrust stand
+motor_params:
+  a: 0.145734
+  b: -0.008379
+  n_motors: 4

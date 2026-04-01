@@ -1,0 +1,10 @@
+publish_freq: 100.0
+
+multi_topic:
+
+  enabled: true
+  
+  alias_map:
+
+    handles: [2382473408, 2214701248]
+    aliases: ["front", "back"]

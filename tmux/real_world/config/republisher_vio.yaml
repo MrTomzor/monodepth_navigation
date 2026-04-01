@@ -1,0 +1,28 @@
+should_replace_child_frame: false
+should_replace_parent_frame: true
+should_replace_time: true
+
+init_heading_to_zero: true
+
+transform:
+
+  do_transform: true
+
+  from_ros: false
+
+  # when from_tf == False, then we use this explicit transform
+  transformation:
+
+    # child to parent
+    rotation: [
+      1.0, 0.0, 0.0,
+      0.0, 1.0, 0.0,
+      0.0, 0.0, 1.0,
+    ]
+
+    # child in parent
+    translation: [
+      0.0,
+      0.05,
+      -0.14,
+    ]
