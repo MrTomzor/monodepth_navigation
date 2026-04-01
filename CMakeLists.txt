@@ -28,11 +28,9 @@ install(
   DESTINATION share/${PROJECT_NAME}
 )
 
-install(
-  FILES
-    requirements.txt
-  DESTINATION share/${PROJECT_NAME}
-)
+
+file(GLOB PYTHON_ENV_FILES python-env/*)
+install(FILES ${PYTHON_ENV_FILES} DESTINATION share/${PROJECT_NAME}/python-env)
 
 
 ament_python_install_package(monodepth PACKAGE_DIR src/monodepth)

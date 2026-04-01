@@ -1,16 +1,29 @@
-import os
+#!/usr/bin/env python3
+
 import launch
+import os
+
 from launch_ros.actions import Node
 from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration
-from launch.conditions import IfCondition, UnlessCondition  # Импортируем условия
+from launch.conditions import IfCondition, UnlessCondition
+from launch.substitutions import (
+        LaunchConfiguration,
+        EnvironmentVariable,
+        )
 
+from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
-    ld = launch.LaunchDescription()
-    pkg_name = "monodepth_navigation"
-    venv_path = os.path.expanduser('~/ros2_workspace/src/monodepth_navigation/python-env/bin/python3')
 
+    ld = launch.LaunchDescription()
+
+    pkg_name = "monodepth_navigation"
+
+    this_pkg_path = get_package_share_directory(pkg_name)
+
+    venv_path = this_pkg_path + "/python-env/bin/python3"
+
+    # #{ uav_name
 
     uav_name = LaunchConfiguration('uav_name')
     input_topic = LaunchConfiguration('input_topic')

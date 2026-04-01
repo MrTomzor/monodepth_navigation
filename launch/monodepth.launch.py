@@ -6,7 +6,10 @@ import os
 from launch_ros.actions import Node
 from launch.actions import DeclareLaunchArgument
 from launch.conditions import IfCondition, UnlessCondition
-from launch.substitutions import (LaunchConfiguration,EnvironmentVariable,)
+from launch.substitutions import (
+        LaunchConfiguration,
+        EnvironmentVariable,
+        )
 
 from ament_index_python.packages import get_package_share_directory
 
@@ -16,7 +19,9 @@ def generate_launch_description():
 
     pkg_name = "monodepth_navigation"
 
-    venv_path = os.path.expanduser('~/ros2_workspace/src/monodepth_navigation/python-env/bin/python3')
+    this_pkg_path = get_package_share_directory(pkg_name)
+
+    venv_path = this_pkg_path + "/python-env/bin/python3"
 
     # #{ uav_name
 
@@ -29,6 +34,8 @@ def generate_launch_description():
     ))
 
     # #} end of custom_config
+
+    # #{ blob detector node
 
     monodepth_node = Node(
         package=pkg_name,
@@ -49,8 +56,86 @@ def generate_launch_description():
             {'output_scaled_depth_map_topic_map': '/midas/scaled_depth_view_map'},
             {'output_pointcloud_topic_map': '/midas/pointcloud_by_map'},
         ]
+
     )
+
+    # #} end of sweeping generator node
 
     ld.add_action(monodepth_node)
 
     return ld
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# #!/usr/bin/env python3
+#
+# import launch
+# import os
+#
+# from launch_ros.actions import Node
+# from launch.actions import DeclareLaunchArgument
+# from launch.conditions import IfCondition, UnlessCondition
+# from launch.substitutions import (LaunchConfiguration,EnvironmentVariable,)
+#
+# from ament_index_python.packages import get_package_share_directory
+#
+# def generate_launch_description():
+#
+#     ld = launch.LaunchDescription()
+#
+#     pkg_name = "monodepth_navigation"
+#
+#     venv_path = os.path.expanduser('~/ros2_workspace/src/monodepth_navigation/python-env/bin/python3')
+#
+#     # #{ uav_name
+#
+#     uav_name = LaunchConfiguration('uav_name')
+#
+#     ld.add_action(DeclareLaunchArgument(
+#         'uav_name',
+#         default_value=os.getenv('UAV_NAME', "uav1"),
+#         description="The uav name used for namespacing.",
+#     ))
+#
+#     # #} end of custom_config
+#
+#     monodepth_node = Node(
+#         package=pkg_name,
+#         namespace=uav_name,
+#         name='monodepth_node',
+#         executable='monocular_depth_estimator.py',
+#         prefix=[venv_path + ' '],
+#         parameters=[
+#             {'use_sim_time': True},
+#
+#             {'input_img_topic': ['/', uav_name, '/rgb/image_raw']},
+#             {'input_camera_info_topic': ['/', uav_name, '/rgb/camera_info']},
+#             # {'input_pointcloud_topic': ['/', uav_name, '/lidar/points']},
+#             {'input_pointcloud_topic': ['/', uav_name, '/open_vins/points_slam']},
+#             {'camera_frame': [uav_name, '/rgb']},
+#
+#             {'output_depth_map_topic': '/midas/depth_view'},
+#             {'output_scaled_depth_map_topic_map': '/midas/scaled_depth_view_map'},
+#             {'output_pointcloud_topic_map': '/midas/pointcloud_by_map'},
+#         ]
+#     )
+#
+#     ld.add_action(monodepth_node)
+#
+#     return ld
