@@ -33,11 +33,10 @@ class MonocularDepthEstimatorNode(Node):
         self.get_logger().info("Node Started (MiDaS Depth Only Mode)")
 
     def init_state(self):
-
         # self.midas = MidasExtension(model_type="DPT_BEiT_L_512")
-        self.midas = MidasExtension(model_type="DPT_Large")
+        # self.midas = MidasExtension(model_type="DPT_Large")
         # self.midas = MidasExtension(model_type="DPT_Hybrid")
-        # self.midas = MidasExtension(model_type="MiDaS_small")
+        self.midas = MidasExtension(model_type="MiDaS_small")
 
         # -----------------------
         # import torch
@@ -51,6 +50,7 @@ class MonocularDepthEstimatorNode(Node):
         self.scale = 1
         self.cloud_buffer = deque(maxlen=30)
         self.pointcloud = PointCloudProcessor(self.tf_buffer)
+        
 
     def init_params(self):
         self.declare_parameter("output_depth_map_topic", "/midas/depth_view")
@@ -90,27 +90,25 @@ class MonocularDepthEstimatorNode(Node):
 
     def init_subscribers(self):
         qos = 1
-        print(f"Subscribe to {self.input_img_topic_name}")
         self.create_subscription(
             Image, self.input_img_topic_name, self.image_callback, qos,
             callback_group=self.subscriber_cb_group
         )
-        print(f"Subscribe to {self.input_rgbd_color_cam_info_topic_name}")
         self.create_subscription(
             CameraInfo, self.input_rgbd_color_cam_info_topic_name, self.camera_info_callback, qos,
             callback_group=self.subscriber_cb_group
         )
-        print(f"Subscribe to {self.input_pointclouds_topic_name}")
         self.create_subscription(
             PointCloud2, self.input_pointclouds_topic_name, self.pointcloud_callback, qos,
             callback_group=self.subscriber_cb_group
         )
     def init_timer(self):
-        self.timer = self.create_timer(0.01, self.compute_midas_pointcloud,callback_group=self.timer_cb_group
-        )
+        self.timer = self.create_timer(0.1, self.compute_midas_pointcloud,callback_group=self.timer_cb_group)
 
     def image_callback(self, image_msg):
+        self.camera_frame = image_msg.header.frame_id
         self.camera.update_image(image_msg)
+
 
     def camera_info_callback(self, cam_info_msg):
         self.camera.set_camera_k_info(cam_info_msg)
@@ -135,6 +133,7 @@ class MonocularDepthEstimatorNode(Node):
         self.cloud_buffer.append((cloud_msg.header.stamp, pointcloud_2d))
 
     def compute_midas_pointcloud(self):
+
         current_image = self.camera.image
         current_time = self.camera.image_time
 
@@ -146,8 +145,9 @@ class MonocularDepthEstimatorNode(Node):
             self.get_logger().info(f"Waiting for {self.input_pointclouds_topic_name} pointcloud data",
                                    throttle_duration_sec=1.0)
             return
-
+        
         depth_color, raw_depth = self.midas.run(current_image)
+
 
         self.camera.publish_image(depth_color, self.pub_depth)
 
@@ -212,11 +212,9 @@ class MonocularDepthEstimatorNode(Node):
         colorized = cv2.applyColorMap(normalized, cv2.COLORMAP_MAGMA)
         return colorized
 
-
 def main(args=None):
     rclpy.init(args=args)
     node_instance = MonocularDepthEstimatorNode()
-
     executor = MultiThreadedExecutor()
     executor.add_node(node_instance)
 

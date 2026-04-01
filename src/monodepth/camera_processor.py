@@ -5,6 +5,7 @@ from cv_bridge import CvBridge
 class CameraProcessor:
 
     def __init__(self, cv_bridge: CvBridge, logger=None):
+        print("init CameraProcessor")
         self.cv_bridge = cv_bridge
         self.logger = logger
         self.k_matrix = None

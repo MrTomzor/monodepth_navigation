@@ -4,9 +4,13 @@ import numpy as np
 
 class MidasExtension:
     def __init__(self, model_type):
+        print("MidasExtension init")
 
-        self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        # self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        self.device = torch.device("cpu")
+        print("before model download")
         self.midas = torch.hub.load("intel-isl/MiDaS", model_type)
+        print("after model download")
         self.midas.to(self.device)
         self.midas.eval()
     
@@ -16,6 +20,8 @@ class MidasExtension:
             self.transform = midas_transforms.dpt_transform
         else:
             self.transform = midas_transforms.small_transform
+
+        print("MidasExtension init finished")
 
 
 

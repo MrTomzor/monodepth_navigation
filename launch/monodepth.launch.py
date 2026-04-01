@@ -44,13 +44,13 @@ def generate_launch_description():
         executable='monocular_depth_estimator.py',
         prefix=[venv_path + ' '],
         parameters=[
-            {'use_sim_time': True},
+            {'use_sim_time': False},
 
             {'input_img_topic': '/oak/rgb/image_raw'},
             {'input_camera_info_topic': '/oak/rgb/camera_info'},
             # {'input_pointcloud_topic': ['/', uav_name, '/lidar/points']},
-            {'input_pointcloud_topic': ['/', uav_name, 'livox/lidar_front/points']},
-            {'camera_frame': '/oak/rgb'},
+            {'input_pointcloud_topic': ['/', uav_name, '/livox/lidar_front/points']},
+            {'camera_frame': 'oak_rgb_camera_frame'},
 
             {'output_depth_map_topic': '/midas/depth_view'},
             {'output_scaled_depth_map_topic_map': '/midas/scaled_depth_view_map'},
