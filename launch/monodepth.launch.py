@@ -55,7 +55,8 @@ def generate_launch_description():
             {'output_depth_map_topic': '/midas/depth_view'},
             {'output_scaled_depth_map_topic_map': '/midas/scaled_depth_view_map'},
             {'output_pointcloud_topic_map': '/midas/pointcloud_by_map'},
-        ]
+        ],
+        output='screen',
 
     )
 

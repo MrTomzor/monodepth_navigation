@@ -42,9 +42,9 @@ install(
     src/monodepth/navigation_controller.py
     src/monodepth/image_undistorter.py
     src/monodepth/camera_processor.py
-    src/pointcloud_processor.py
-    src/scale_estimator.py
-    src/midas_extension.py
+    src/monodepth/pointcloud_processor.py
+    src/monodepth/scale_estimator.py
+    src/monodepth/midas_extension.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
