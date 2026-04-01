@@ -34,11 +34,17 @@ class MonocularDepthEstimatorNode(Node):
 
     def init_state(self):
 
-        # self.midas = MidasExtension(model_type="DPT_SwinV2_L_384")  # does not work
-        self.midas = MidasExtension(model_type="DPT_BEiT_L_512")
-        # self.midas = MidasExtension(model_type="DPT_Large")
+        # self.midas = MidasExtension(model_type="DPT_BEiT_L_512")
+        self.midas = MidasExtension(model_type="DPT_Large")
         # self.midas = MidasExtension(model_type="DPT_Hybrid")
         # self.midas = MidasExtension(model_type="MiDaS_small")
+
+        # -----------------------
+        # import torch
+        # device_name = self.midas.device
+        # is_cuda = torch.cuda.is_available()
+        # self.get_logger().info(f"CUDA Available: {is_cuda}, MiDaS Device: {device_name}")
+        # # ------------------------
 
 
         self.camera = CameraProcessor(self.bridge, logger=self.get_logger())
@@ -112,7 +118,7 @@ class MonocularDepthEstimatorNode(Node):
 
     def pointcloud_callback(self, cloud_msg):
         if self.camera.k_matrix is None:
-            self.get_logger().warn("Camera intrinsic matrix not initialized yet.")
+            self.get_logger().info("Camera intrinsic matrix not initialized yet.")
             return
 
         raw_pointlcoud = self.pointcloud.read_pointcloud(cloud_msg)
@@ -122,7 +128,7 @@ class MonocularDepthEstimatorNode(Node):
             cloud_msg.header.stamp
         )
         if transformed_pointcloud is None or len(transformed_pointcloud) == 0:
-            self.get_logger().warn("There is no pointcloud in frame")
+            self.get_logger().info("There is no pointcloud in frame")
             return
 
         pointcloud_2d = self.pointcloud.project_points_3d_to_2d(transformed_pointcloud, self.camera.k_matrix)
@@ -133,11 +139,11 @@ class MonocularDepthEstimatorNode(Node):
         current_time = self.camera.image_time
 
         if current_image is None:
-            self.get_logger().warn("Waiting for Image", throttle_duration_sec=1.0)
+            self.get_logger().info("Waiting for Image", throttle_duration_sec=1.0)
             return
 
         if not self.cloud_buffer:
-            self.get_logger().warn(f"Waiting for {self.input_pointclouds_topic_name} pointcloud data",
+            self.get_logger().info(f"Waiting for {self.input_pointclouds_topic_name} pointcloud data",
                                    throttle_duration_sec=1.0)
             return
 
@@ -182,7 +188,7 @@ class MonocularDepthEstimatorNode(Node):
 
     def find_pointcloud(self, image_time):
         if not self.cloud_buffer:
-            self.get_logger().warn("No pointcloud in cloud_buffer")
+            self.get_logger().info("No pointcloud in cloud_buffer")
             return None
 
         img_time_sec = self.msg_time_to_sec(image_time)
@@ -192,9 +198,9 @@ class MonocularDepthEstimatorNode(Node):
             key=lambda x: abs(self.msg_time_to_sec(x[0]) - img_time_sec)
         )
 
-        self.get_logger().info(f"nejstarsi {self.msg_time_to_sec(self.cloud_buffer[0][0])}")
-        self.get_logger().info(f"nejnovejsi {self.msg_time_to_sec(self.cloud_buffer[-1][0])}")
-        self.get_logger().info(str(img_time_sec))
+        # self.get_logger().info(f"nejstarsi {self.msg_time_to_sec(self.cloud_buffer[0][0])}")
+        # self.get_logger().info(f"nejnovejsi {self.msg_time_to_sec(self.cloud_buffer[-1][0])}")
+        # self.get_logger().info(str(img_time_sec))
 
         _, pointcloud = closest
         return pointcloud
