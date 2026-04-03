@@ -38,10 +38,10 @@ def generate_launch_description():
         'uav_name', default_value=os.getenv('UAV_NAME', "uav1")
     ))
     ld.add_action(DeclareLaunchArgument(
-        'input_topic', default_value='rgb/image_raw'
+        'input_topic', default_value='/oak/rgb/image_raw'
     ))
     ld.add_action(DeclareLaunchArgument(
-        'input_camera_info_topic', default_value='rgb/camera_info'
+        'input_camera_info_topic', default_value='/oak/rgb/camera_info'
     ))
     ld.add_action(DeclareLaunchArgument(
         'output_topic', default_value='rgb/image_undistorted'
@@ -64,7 +64,7 @@ def generate_launch_description():
         name='image_undistorter',
         prefix=[venv_path + ' '],
         parameters=[
-            {'use_sim_time': True},
+            {'use_sim_time': False},
             {'input_topic': input_topic},
             {'input_camera_info_topic': input_camera_info_topic},
             {'output_topic': output_topic},
@@ -79,7 +79,7 @@ def generate_launch_description():
         executable='rectify_node',
         name='rectify_node',
         namespace=uav_name,
-        parameters=[{'use_sim_time': True}],
+        parameters=[{'use_sim_time': False}],
         remappings=[
             ('image', input_topic),
             ('camera_info', input_camera_info_topic),
