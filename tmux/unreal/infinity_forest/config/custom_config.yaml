@@ -68,6 +68,9 @@ mrs_uav_managers:
         ]
 
         pos_vio:
+          source:
+            node: "HwApiManager"
+            component: "main"
           state_id: 0 # 0 - position, 1 - velocity, 2 - acceleration
           noise: 0.001 # measurement noise covariance (R)
           noise_unhealthy_coeff: 100.0 # covariance gets multiplied by this coefficient when correction is unhealthy (R)
@@ -83,6 +86,9 @@ mrs_uav_managers:
             enabled: false
 
         vel_hw_api:
+          source:
+            node: "HwApiManager"
+            component: "main"
           state_id: 1 # 0 - position, 1 - velocity, 2 - acceleration
           noise: 1.0 # measurement noise covariance (R)
           noise_unhealthy_coeff: 100.0 # covariance gets multiplied by this coefficient when correction is unhealthy (R)
@@ -124,6 +130,9 @@ mrs_uav_managers:
         ]
 
         hdg_vio:
+          source:
+            node: "HwApiManager"
+            component: "main"
           state_id: 0 # 0 - position, 1 - velocity, 2 - acceleration
           noise: 0.0001 # measurement noise covariance (R)
           noise_unhealthy_coeff: 100.0 # covariance gets multiplied by this coefficient when correction is unhealthy (R)
@@ -167,6 +176,9 @@ mrs_uav_managers:
 #mrs_uav_managers/estimation_manager/open_vins/lat_open_vins/pos_vio/transform/enabled
 
         pos_vio:
+          source:
+            node: "HwApiManager"
+            component: "main"
           state_id: 0 # 0 - position, 1 - velocity, 2 - acceleration
           noise: 0.01 # measurement noise covariance (R)
           noise_unhealthy_coeff: 100.0 # covariance gets multiplied by this coefficient when correction is unhealthy (R)
@@ -182,6 +194,9 @@ mrs_uav_managers:
             enabled: false
 
         vel_vio:
+          source:
+            node: "HwApiManager"
+            component: "main"
           state_id: 1 # 0 - position, 1 - velocity, 2 - acceleration
           noise: 0.01 # measurement noise covariance (R)
           noise_unhealthy_coeff: 100.0 # covariance gets multiplied by this coefficient when correction is unhealthy (R)
