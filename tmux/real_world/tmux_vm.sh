@@ -67,7 +67,7 @@ attach=true
 ### DO NOT MODIFY BELOW ###
 ###########################
 
-export TMUX_BIN="/usr/bin/tmux -L mrs -f /etc/ctu-mrs/tmux.conf"
+export TMUX_BIN="/opt/homebrew/bin/tmux -L mrs -f /etc/ctu-mrs/tmux.conf"
 
 # find the session
 FOUND=$( $TMUX_BIN ls | grep $SESSION_NAME )
