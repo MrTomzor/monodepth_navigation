@@ -54,3 +54,11 @@ mrs_uav_flightforge_simulator:
 
     hour: 15
     minute: 30
+
+  # Choose cluttered difficulties from 1 [high] to 10 [low]
+  ueds_forest_density: 1
+
+  # Choose Hilly Level from 1 [totally flat] to 5 [the most hilly]
+  ueds_forest_hilly_level: 1
+
+
