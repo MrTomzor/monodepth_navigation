@@ -37,62 +37,6 @@ pre_input="export RMW_IMPLEMENTATION=rmw_zenoh_cpp; export USE_SIM_TIME=false"
 input=(
   'Rosbag' 'waitForOffboard; ./record.sh
 '
-  'HwApi' 'ros2 launch mrs_uav_px4_api api.launch.py
-'
-  'Oakd' 'ros2 launch depthai_ros_driver camera.launch.py rectify_rgb:=false
-'
-  'Livox' 'ros2 launch livox_ros_driver2 livox.launch.py custom_config:=./config/livox.yaml json_config:=./config/dual_mid360.json
-'
-  'LIO_front' 'ros2 launch point_lio point_lio.launch.py preset:=mid360 topic_imu:=livox/lidar_front/imu topic_livox:=livox/lidar_front/custom custom_config:=./config/point_lio.yaml node_name:=point_lio_front
-'
-  'LIO_back' 'ros2 launch point_lio point_lio.launch.py preset:=mid360 topic_imu:=livox/lidar_back/imu topic_livox:=livox/lidar_back/custom custom_config:=./config/point_lio.yaml node_name:=point_lio_back
-'
-  'VIO' 'export DOCKER_HOST=tcp://192.168.1.181:2375 && cd ./mrs_vio/lazydocker/vio1 && ./up.sh
-'
-  'LZD' 'export DOCKER_HOST=tcp://192.168.1.181:2375 && lazydocker
-'
-  'LIO_rep_front' 'ros2 launch mrs_odometry_republisher odometry_republisher.launch.py custom_config:=./config/republisher_pointlio.yaml new_parent_frame:=odometry tf_parent:=$UAV_NAME/fcu tf_child:=$UAV_NAME/livox_front node_name:=republisher_pointlio_front topic_in:=/$UAV_NAME/point_lio_front/odometry topic_out:=~/odom
-'
-  'LIO_rep_back' 'ros2 launch mrs_odometry_republisher odometry_republisher.launch.py custom_config:=./config/republisher_pointlio.yaml new_parent_frame:=odometry tf_parent:=$UAV_NAME/fcu tf_child:=$UAV_NAME/livox_back node_name:=republisher_pointlio_back topic_in:=/$UAV_NAME/point_lio_back/odometry topic_out:=~/odom
-'
-  'VIO_rep_front' 'ros2 launch mrs_odometry_republisher odometry_republisher.launch.py custom_config:=./config/republisher_vio.yaml new_parent_frame:=odometry topic_in:=/vio1_front/open_vins/odomimu node_name:=republisher_vio_front topic_out:=~/odom
-'
-  'VIO_rep_back' 'ros2 launch mrs_odometry_republisher odometry_republisher.launch.py custom_config:=./config/republisher_vio.yaml new_parent_frame:=odometry topic_in:=/vio1_back/open_vins/odomimu node_name:=republisher_vio_back topic_out:=~/odom
-'
-  'Status' 'ros2 run mrs_uav_status status.sh
-'
-  'Core' 'sleep 5; ros2 launch mrs_uav_core core.launch.py platform_config:=./config/platform_config.yaml world_config:=./config/world_config.yaml custom_config:=./config/custom_config.yaml network_config:=./config/network_config.yaml
-'
-  'AutoStart' 'ros2 launch mrs_uav_autostart automatic_start.launch.py
-'
-  'LOSOS' 'sleep 10; ros2 launch mrs_losos_server losos.launch.py custom_config:=./config/losos_config.yaml lidar_3d_topic_0_in:=livox/lidar_front/points lidar_3d_topic_1_in:=livox/lidar_back/points world_frame_id:=${UAV_NAME}/stable_origin map_frame_id:=${UAV_NAME}/stable_origin semantic_pc_topic_in:=semantic_node/semantic/point_cloud
-'
-  'Analyzer' 'sleep 10; ros2 launch semantic_map_analyzer semantic_map_analyzer.launch.py
-'
-'BT_TREE' 'ros2 launch uav_bt_executor ros_node_launch.py custom_config:=./config/bt_config.yaml bt_tree_path:=./config/sprind_trees/SAR_tree.xml
-'
-  'BT_MONITOR' './config/tree_vis_start.sh
-'
-  'Semantic' 'sleep 10; ros2 launch sprind_core semantic_node.launch.py
-'
-  # 'Semantic' 'sleep 10; ros2 launch semantic_node_cpp semantic_node.launch.py
-# '
-  'Ground' 'sleep 10; ros2 launch csf_ground_filter csf_ground_filter.launch.py
-# '
-#   'HouseNum' 'sleep 10; ros2 launch number_recognizer house_numbers.launch.py
-# '
-  'PersonDet' 'sleep 10; ros2 launch yolo_detection_node yolo_detection.launch.py
-'
-  'PersonProj' 'ros2 launch camera_projection_node camera_projection.launch.py
-'
-  'PersonEst' 'ros2 launch person_state_estim state_estim.launch.py
-'
-  'PersonPred' 'ros2 launch person_state_predict state_predict.launch.py
-'
-  'PersonPlanner' 'ros2 launch path_planner planner.launch.py
-'
-  'Monodepth' 'ros2 launch monodepth_navigation monodepth.launch.py uav_name:=$UAV_NAME
-'
   'Navigation' 'ros2 launch monodepth_navigation navigation.launch.py uav_name:=$UAV_NAME x_octogoal:=100.0 y_octogoal:=0.0 z_octogoal:=2.0 yaw_octogoal:=0.0
 '
   'Undistorter' 'ros2 launch monodepth_navigation undistorter.launch.py uav_name:=$UAV_NAME use_custom:=false
@@ -107,13 +51,10 @@ input=(
 '
   'zenoh' 'ros2 run rmw_zenoh_cpp rmw_zenohd
 '
-  'livox_tf_front' './config/livox_tf_front.sh
-'
-  'livox_tf_back' './config/livox_tf_back.sh
-'
   'oak_tf' './config/oakd_tf.sh
 '
 )
+
 
 # the name of the window to focus after start
 init_window="Status"
