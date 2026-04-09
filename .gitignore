@@ -80,3 +80,9 @@ tmux/unreal/infinity_forest/data/
 metadata.yaml
 
 
+
+# Ignoruj všechny soubory s příponou .log
+*.log
+
+# Ignoruj všechno uvnitř složek log
+**/log/*
