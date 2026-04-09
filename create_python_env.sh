@@ -9,7 +9,7 @@ cd "$MY_PATH"
 sudo apt-get -y install python3-venv
 
 # create the environment
-python3 -m venv --system-site-packages python-env
+python3.11 -m venv --system-site-packages python-env
 
 # activate the environment
 source ./python-env/bin/activate

@@ -67,7 +67,8 @@ def generate_launch_description():
                     {'is_reactive': is_reactive},
                     {'target_frame': [uav_name, '/fcu_untilted']},
                     {'output_velocity_topic': ['/', uav_name, '/control_manager/velocity_reference']},
-                    {'world_frame': [uav_name, '/local_origin']},
+		    # {'world_frame': [uav_name, '/local_origin']},
+		    {'world_frame': [uav_name, '/stable_origin']},
                     {'body_frame': [uav_name, '/fcu_untilted']},
 
                     {'input_pointcloud_topic': '/midas/pointcloud_by_map'},
