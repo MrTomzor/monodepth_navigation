@@ -10,7 +10,7 @@ A monocular camera-based navigation pipeline for UAVs in unstructured environmen
     <td align="center" width="25%"><b>RGB Image</b></td>
     <td align="center" width="25%"><b>MiDaS Depth Map</b></td>
     <td align="center" width="25%"><b>OpenVINS Landmarks</b></td>
-    <td align="center" width="25%"><b>Metric Point Cloud</b></td>
+    <td align="center" width="25%"><b>Point Cloud</b></td>
   </tr>
   <tr>
     <td><img src="fig/rgb_input.jpg"        width="100%" style="aspect-ratio:4/3;object-fit:cover"/></td>
