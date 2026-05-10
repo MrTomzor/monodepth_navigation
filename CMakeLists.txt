@@ -45,6 +45,7 @@ install(
     src/monodepth/pointcloud_processor.py
     src/monodepth/scale_estimator.py
     src/monodepth/midas_extension.py
+    src/monodepth/depth_evaluator.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
