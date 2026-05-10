@@ -56,7 +56,7 @@ windows:
   - navigation:
       layout: tiled
       panes:
-        - ros2 launch monodepth_navigation navigation.launch.py uav_name:=$UAV_NAME x_octogoal:=100.0 y_octogoal:=0.0 z_octogoal:=0.0 yaw_octogoal:=0.0
+        - ros2 launch monodepth_navigation navigation.launch.py uav_name:=$UAV_NAME x_octogoal:=-9.0 y_octogoal:=-28.0 z_octogoal:=0.0 yaw_octogoal:=0.0
 #  - evaluation:
 #      layout: tiled
 #      panes:

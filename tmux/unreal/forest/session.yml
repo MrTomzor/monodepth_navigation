@@ -57,10 +57,16 @@ windows:
       layout: tiled
       panes:
         - ros2 launch monodepth_navigation navigation.launch.py uav_name:=$UAV_NAME x_octogoal:=100.0 y_octogoal:=0.0 z_octogoal:=0.0 yaw_octogoal:=0.0
-#  - evaluation:
+#  - undistorter:
 #      layout: tiled
 #      panes:
-#        - $HOME/ros2_workspace/src/monodepth_navigation/python-env/bin/python3 $HOME/ros2_workspace/src/monodepth_navigation/src/monodepth/evaluator.py
+#        - ros2 launch monodepth_navigation undistorter.launch.py uav_name:=$UAV_NAME use_custom:=true
+
+#        - ros2 launch monodepth_navigation undistorter.launch.py uav_name:=$UAV_NAME use_custom:=false input_topic:=chess input_camera_info_topic:=chess_info output_topic:=chess_rectified distortion_coeffs:="[-0.55, 0.08, 0.0, 0.0, 0.0]"
+  - evaluation:
+      layout: tiled
+      panes:
+        - $HOME/ros2_workspace/src/monodepth_navigation/python-env/bin/python3 $HOME/ros2_workspace/src/monodepth_navigation/src/monodepth/evaluator.py
   - commands:
       layout: tiled
       panes:

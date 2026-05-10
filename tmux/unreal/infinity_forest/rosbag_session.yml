@@ -8,16 +8,29 @@ tmux_options: -f /etc/ctu-mrs/tmux.conf
 # you can modify these
 startup_window: status
 pre_window: export UAV_NAME=uav1; export USE_SIM_TIME="true"; export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+#pre_window: export UAV_NAME=uav91; export USE_SIM_TIME="true"; export RMW_IMPLEMENTATION=rmw_zenoh_cpp
 windows:
   - router:
       layout: tiled
       panes:
         - ros2 run rmw_zenoh_cpp rmw_zenohd
 
+  - oakd_rf:
+      layout: tiled
+      panes:
+        - ./config/oakd_tf.sh
+
   - rosbag:
       layout: tiled
       panes:
         - ros2 bag play ./forest_flight_lidar_01
+#        - ros2 bag play /home/blueberry/rosbags/recovered --clock
+#        - ros2 bag play /home/blueberry/rosbags/346_2026_04_09_15_24_40/rosbag2_2026_04_09-15_28_44
+#        - ros2 bag play /home/blueberry/rosbags/347_2026_04_09_15_32_10/rosbag2_2026_04_09-15_32_56 --clock
+
+  - foxglove:
+      panes:
+        - ros2 launch foxglove_bridge foxglove_bridge_launch.xml port:=8765
 
   - status:
       layout: tiled
@@ -27,17 +40,27 @@ windows:
   - monodepth:
       layout: tiled
       panes:
-        - ros2 run monodepth_navigation monocular_depth_estimator --ros-args -p use_sim_time:=true
+        - ros2 launch monodepth_navigation monodepth.launch.py uav_name:=$UAV_NAME
+
+  - time_fixer:
+      layout: tiled
+      panes:
+        - ros2 run topic_tools transform /uav1/open_vins_front/points_slam /uav1/open_vins_front/points_slam_fixed 'sensor_msgs/msg/PointCloud2' 'm.header.stamp.sec -= 708; m'
 
   - map_plan:
       layout: tiled
       panes:
-        - ros2 launch mrs_octomap_mapping_planning mapplan.launch.py custom_config:=./config/mapplan_config.yaml depth_camera_0:=/midas/pointcloud_by_map depth_camera_0_info:=/uav1/rgb/camera_info
+        - ros2 launch mrs_octomap_mapping_planning mapplan.launch.py custom_config:=./config/mapplan_config.yaml lidar_3d_0:=/midas/pointcloud_by_map uav_name:=$UAV_NAME world_frame:=$UAV_NAME/stable_origin
 
   - navigation:
       layout: tiled
       panes:
-        - ros2 run monodepth_navigation navigation_controller --ros-args -p use_sim_time:=true -p x_octogoal:=5.0 -p y_octogoal:=0.0 -p z_octogoal:=0.0 -p yaw_octogoal:=0.0
+        - ros2 launch monodepth_navigation navigation.launch.py uav_name:=$UAV_NAME x_octogoal:=0.0 y_octogoal:=0.0 z_octogoal:=4.0 yaw_octogoal:=0.0
+
+#  - rviz:
+#      layout: tiled
+#      panes:
+#        - ros2 run rviz2 rviz2 -d ./rosbag_rviz.rviz --ros-args -p use_sim_time:=true
 
   - rviz:
       layout: tiled

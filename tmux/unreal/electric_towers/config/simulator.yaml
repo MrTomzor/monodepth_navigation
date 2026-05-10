@@ -6,35 +6,17 @@ frames:
   fcu:
     publish_tf: false
 
+
 uav1:
-  frame: "x500"
+  frame: "a300"
   type: "x500"
   spawn:
-    x: 0.0
-    y: 0.0
+    x: -35.0
+    y: -28.0
     z: 0.0
     heading: 0.0
 
-#uav1:
-#  frame: "a300"
-#  type: "x500"
-#  spawn:
-#    x: -1.
-#    y: -2.5
-#    z: -3.5
-#    heading: 1.6
 
-#
-#uav1:
-#  frame: "a300"
-#  type: "x500"
-#  spawn:
-#    x: -35.0
-#    y: -28.0
-#    z: 0.0
-#    heading: 0.0
-#
-#
 
 mrs_uav_flightforge_simulator:
 
@@ -77,10 +59,10 @@ mrs_uav_flightforge_simulator:
 
 
 #  world_name: "forest"
-  world_name: "infinity_forest"
+#  world_name: "infinity_forest"
 #  world_name: "service_tunnel"
 #  world_name: "cave"
-#  world_name: "eletric_towers"
+  world_name: "eletric_towers"
 
   daytime:
 
