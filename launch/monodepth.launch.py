@@ -44,17 +44,31 @@ def generate_launch_description():
         executable='monocular_depth_estimator.py',
         prefix=[venv_path + ' '],
         parameters=[
-            {'use_sim_time': False},
+            # {'use_sim_time': False}, # real world
+            {'use_sim_time': True}, # simulation
+            #
+            # {'input_img_topic': '/oak/rgb/image_raw/compressed'},
+            # {'input_camera_info_topic': '/oak/rgb/camera_info'},
+            # {'input_pointcloud_topic': ['/', uav_name, '/livox/lidar_front/points']},
+            # # {'input_pointcloud_topic': '/uav1/open_vins_front/points_slam'},
+            # {'camera_frame': 'oak_rgb_camera_frame'},
+            # {'optical_camera_frame': 'oak_rgb_camera_optical_frame'},
+            # {'world_frame': 'uav91/world_origin'},
+            # {'is_camera_inverted': True},
 
-            {'input_img_topic': '/oak/rgb/image_raw'},
-            {'input_camera_info_topic': '/oak/rgb/camera_info'},
+            {'input_img_topic': '/uav1/rgb/image_raw'},
+            {'input_camera_info_topic': '/uav1/rgb/camera_info'},
             # {'input_pointcloud_topic': ['/', uav_name, '/lidar/points']},
-            {'input_pointcloud_topic': ['/', uav_name, '/livox/lidar_front/points']},
-            {'camera_frame': 'oak_rgb_camera_frame'},
+            {'input_pointcloud_topic': ['/', uav_name, '/open_vins/points_slam']},
+            {'camera_frame': 'uav1/rgb'},
+            {'world_frame': 'uav1/local_origin'},
 
             {'output_depth_map_topic': '/midas/depth_view'},
             {'output_scaled_depth_map_topic_map': '/midas/scaled_depth_view_map'},
             {'output_pointcloud_topic_map': '/midas/pointcloud_by_map'},
+            {'output_pointcloud_topic_value': '/midas/pointcloud_by_value'},
+
+
         ],
         output='screen',
 

@@ -64,7 +64,8 @@ def generate_launch_description():
         name='image_undistorter',
         prefix=[venv_path + ' '],
         parameters=[
-            {'use_sim_time': False},
+            # {'use_sim_time': False}, # real world
+            {'use_sim_time': True},  # simulation
             {'input_topic': input_topic},
             {'input_camera_info_topic': input_camera_info_topic},
             {'output_topic': output_topic},
