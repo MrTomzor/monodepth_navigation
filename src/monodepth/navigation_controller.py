@@ -41,7 +41,7 @@ class NavigationControllerNode(Node):
         self.declare_parameter("is_reactive", False)
 
 
-        self.is_reactive = self.get_parameter("is_reactive").value  # if True - navigation mode set to reactive navigation else navigation mode set to octomap planer
+        self.is_reactive = self.get_parameter("is_reactive").value
 
 
         self.camera_frame = self.get_parameter("target_frame").value
@@ -61,19 +61,20 @@ class NavigationControllerNode(Node):
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
     def init_state(self):
-        self.drone_size = 0.02
+        self.drone_height = 0.6
         self.near_threshold = 3.0
-        self.far_threshold = 12.0
+        self.far_threshold = 10.0
 
 
         self.yaw_gain = 1.5
-        self.target_reached_dist = 2.0
+        self.target_reached_dist = 1.0
         self.current_position = None
 
         self.still_eps = 0.05
         self.last_pos = None
         self.traveled_path = deque(maxlen=10)
         self.pointcloud = PointCloudProcessor(self.tf_buffer)
+        # self.pointcloud = PointCloudProcessor(self.tf_buffer, logger=self.get_logger())
         self.latest_pointcloud = None
 
     def init_publishers(self):
@@ -98,7 +99,7 @@ class NavigationControllerNode(Node):
 
     def init_timers(self):
         if self.is_reactive:
-            self.reactive_timer = self.create_timer(0.001, self.reactive_navigation)
+            self.reactive_timer = self.create_timer(0.1, self.reactive_navigation)
         else:
             self.create_timer(3.0, self.octoplanner)
 
@@ -126,6 +127,11 @@ class NavigationControllerNode(Node):
 
         self.traveled_path.append(current_position)
 
+        # self.send_goto(current_position[0] + self.x_octogoal,
+        #                current_position[1] + self.y_octogoal,
+        #                current_position[2],
+        #                self.yaw_octogoal)
+
 
         target_x = self.x_octogoal
         target_y = self.y_octogoal
@@ -134,10 +140,6 @@ class NavigationControllerNode(Node):
         self.get_logger().info(f"Target X={target_x}, Y={target_y}, Z={target_z}")
         self.send_goto(target_x, target_y, target_z, self.yaw_octogoal)
 
-        # self.send_goto(current_position[0] + self.x_octogoal,
-        #                current_position[1] + self.y_octogoal,
-        #                current_position[2],
-        #                self.yaw_octogoal)
         self.last_pos = current_position
 
     def clear_octomap(self):
@@ -159,7 +161,6 @@ class NavigationControllerNode(Node):
         req.goal[2] = float(z)
         req.goal[3] = float(yaw)
 
-        # Асинхронный вызов, чтобы не заблокировать таймер
         future = self.goto_srv.call_async(req)
         future.add_done_callback(self.goto_response_callback)
 
@@ -201,7 +202,13 @@ class NavigationControllerNode(Node):
     def pointcloud_callback(self, cloud_msg):
         raw_pointcloud = self.pointcloud.read_pointcloud(cloud_msg)
         self.latest_pointcloud = self.pointcloud.change_points_frame(
-            self.camera_frame, cloud_msg.header.frame_id, self.camera_frame, raw_pointcloud, cloud_msg.header.stamp)
+            fixed_frame=self.world_frame,
+            source_frame=cloud_msg.header.frame_id,
+            target_frame=self.body_frame,
+            points=raw_pointcloud,
+            source_time=rclpy.time.Time(),
+            target_time=rclpy.time.Time()
+        )
 
     def decide_action(self, near_left, near_front, near_right, far_left, far_right):
         self.get_logger().info(
@@ -210,79 +217,78 @@ class NavigationControllerNode(Node):
         current_position = self.get_xyz_from_tf()
         if current_position is None:
             current_position = self.current_position
-
         if current_position is None:
             return
 
         curr_x, curr_y, curr_z, curr_yaw = current_position
 
-        target_x = self.x_octogoal
-        target_y = self.y_octogoal
-
-        dx = target_x - curr_x
-        dy = target_y - curr_y
+        dx = self.x_octogoal - curr_x
+        dy = self.y_octogoal - curr_y
         dist_to_goal = np.sqrt(dx ** 2 + dy ** 2)
 
         target_yaw_global = np.arctan2(dy, dx)
-
         yaw_error = target_yaw_global - curr_yaw
         yaw_error = (yaw_error + np.pi) % (2 * np.pi) - np.pi
 
-        if self.near_threshold >= near_front >= self.drone_size:
-            if far_left > far_right:
+        if near_front <= self.near_threshold:
+            if near_left > near_right:
                 self.get_logger().info("Obstacle ahead! Turning left")
                 self.send_velocity_command(vx=0.0, vy=0.0, vz=0.0, yaw_rate=0.6)
             else:
                 self.get_logger().info("Obstacle ahead! Turning right")
                 self.send_velocity_command(vx=0.0, vy=0.0, vz=0.0, yaw_rate=-0.6)
+
         elif near_front <= self.far_threshold:
-            if near_left > near_right:
+            if far_left > far_right:
                 self.get_logger().info("Obstacle ahead (far), gently veering left")
-                self.send_velocity_command(vx=0.1, vy=0.1, vz=0.0, yaw_rate=0.2)
+                self.send_velocity_command(vx=0.5, vy=0.1, vz=0.0, yaw_rate=0.2)
             else:
                 self.get_logger().info("Obstacle ahead (far), gently veering right")
-                self.send_velocity_command(vx=0.1, vy=-0.1, vz=0.0, yaw_rate=-0.2)
+                self.send_velocity_command(vx=0.5, vy=-0.1, vz=0.0, yaw_rate=-0.2)
+
         else:
-            if dist_to_goal < 2.0:
+            if dist_to_goal < self.target_reached_dist:
                 self.get_logger().info("Goal achieved, staying still")
                 self.send_velocity_command(vx=0.0, vy=0.0, vz=0.0, yaw_rate=0.0)
                 return
 
-            if abs(yaw_error) < 0.05:
-                cmd_yaw_rate = 0.0
-            else:
-                cmd_yaw_rate = np.clip(self.yaw_gain * yaw_error, -0.8, 0.8)
+            cmd_yaw_rate = 0.0 if abs(yaw_error) < 0.05 else np.clip(self.yaw_gain * yaw_error, -0.4, 0.4)
+            self.send_velocity_command(vx=0.7, vy=0.0, vz=0.0, yaw_rate=cmd_yaw_rate)
+            self.get_logger().info(f"Path clear, flying straight with yaw: {cmd_yaw_rate:.3f}")
 
-            self.send_velocity_command(vx=0.4, vy=0.0, vz=0.0, yaw_rate=cmd_yaw_rate)
-            self.get_logger().info(f"Path clear, flying straight with yaw: {cmd_yaw_rate}")
+
 
     def get_distances_from_sectors(self, pointcloud):
-        near_left = near_front = near_right = far_left = far_right = float('inf')
-        for point in pointcloud:
-            x, y, z = point
-            if not (-0.15 < z < 0.15):
-                continue
+        if len(pointcloud) == 0:
+            return float('inf'), float('inf'), float('inf'), float('inf'), float('inf')
 
-            angle_rad = np.arctan2(y, x)
-            angle_deg = np.degrees(angle_rad)
+        pts = np.array(pointcloud)
+        x, y, z = pts[:, 0], pts[:, 1], pts[:, 2]
 
-            if angle_deg < -90 or angle_deg > 90:
-                continue
+        # z height filter
+        mask_z = (z > -self.drone_height/2) & (z < self.drone_height/2)
+        x, y = x[mask_z], y[mask_z]
 
-            distance = np.sqrt(x ** 2 + y ** 2)
+        if len(x) == 0:
+            return float('inf'), float('inf'), float('inf'), float('inf'), float('inf')
 
-            if -20 <= angle_deg < 20:
-                near_front = min(near_front, distance)
-            elif 20 <= angle_deg < 30:
-                near_left = min(near_left, distance)
-                far_left = min(far_left, distance)
-            elif -30 <= angle_deg < -20:
-                near_right = min(near_right, distance)
-                far_right = min(far_right, distance)
-            elif 20 <= angle_deg < 90:
-                far_left = min(far_left, distance)
-            elif -90 <= angle_deg < -20:
-                far_right = min(far_right, distance)
+        angles = np.degrees(np.arctan2(y, x))
+        distances = np.sqrt(x ** 2 + y ** 2)
+
+        # angle filter
+        mask_fov = (angles >= -90) & (angles <= 90)
+        angles = angles[mask_fov]
+        distances = distances[mask_fov]
+
+        def sector_min(mask):
+            d = distances[mask]
+            return float(d.min()) if len(d) > 0 else float('inf')
+
+        near_front = sector_min((angles >= -20) & (angles < 20))
+        near_left = sector_min((angles >= 20) & (angles < 35))
+        near_right = sector_min((angles >= -35) & (angles < -20))
+        far_left = sector_min((angles >= 35) & (angles < 90))
+        far_right = sector_min((angles >= -90) & (angles < -35))
 
         return near_left, near_front, near_right, far_left, far_right
 

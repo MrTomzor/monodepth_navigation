@@ -6,11 +6,8 @@ class MidasExtension:
     def __init__(self, model_type):
         print("MidasExtension init")
 
-        # self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-        self.device = torch.device("cpu")
-        print("before model download")
+        self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         self.midas = torch.hub.load("intel-isl/MiDaS", model_type)
-        print("after model download")
         self.midas.to(self.device)
         self.midas.eval()
     
@@ -54,9 +51,6 @@ class MidasExtension:
                                              dtype=cv2.CV_64F)
         depth_map_8u = (depth_map_normalized * 255).astype(np.uint8)
         depth_color = cv2.applyColorMap(depth_map_8u, cv2.COLORMAP_MAGMA)
-
-        print("MiDaS Depth shape:", depth_map.shape)
-        print("MiDaS Depth min/max:", depth_map.min(), depth_map.max(), '\n')
 
         return depth_color, depth_map
 

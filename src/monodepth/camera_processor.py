@@ -21,13 +21,15 @@ class CameraProcessor:
             if self.logger:
                 self.logger.info("Received camera info")
 
+
     def update_image(self, msg):
-        self.image = self.cv_bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
-        self.image_time = msg.header.stamp
-        if self.image is None or self.image_time is None:
+        try:
+            image = self.cv_bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+            self.image = image
+            self.image_time = msg.header.stamp
+        except Exception as e:
             if self.logger:
-                self.logger.warn("Failed to decode image")
-            return
+                self.logger.warn(f"Failed to decode image: {e}")
 
     def scale_camera_k(self, K: np.ndarray, img_hw, depth_hw):
         H_img, W_img = img_hw

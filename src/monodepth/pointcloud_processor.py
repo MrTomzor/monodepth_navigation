@@ -8,6 +8,9 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 
 
+PC_RESOLUTION = 32
+
+
 class PointCloudProcessor:
     def __init__(self, tf_buffer: tf2_ros.Buffer):
         self.tf_buffer = tf_buffer
@@ -15,18 +18,21 @@ class PointCloudProcessor:
     def read_pointcloud(self, msg):
         return list(pc2.read_points(msg, field_names=("x", "y", "z"), skip_nans=True))
 
-    def change_points_frame(self, fixed_frame, source_frame, target_frame, points, time):
+    def change_points_frame(self, fixed_frame, source_frame, target_frame,
+                            points, source_time, target_time):  # два времени!
         try:
             tf_msg = self.tf_buffer.lookup_transform_full(
                 target_frame=target_frame,
-                target_time=time,
+                target_time=target_time,
                 source_frame=source_frame,
-                source_time=time,
+                source_time=source_time,
                 fixed_frame=fixed_frame,
                 timeout=rclpy.duration.Duration(seconds=0.8)
             )
-        except (tf2_ros.LookupException, tf2_ros.ExtrapolationException, tf2_ros.ConnectivityException) as e:
-            print(f"WARNING: Pointcloud TF lookup transform failed: {e}")
+        except (tf2_ros.LookupException,
+                tf2_ros.ExtrapolationException,
+                tf2_ros.ConnectivityException) as e:
+            print(f"WARNING: TF lookup failed: {e}")
             return []
 
         t = tf_msg.transform.translation
@@ -70,10 +76,10 @@ class PointCloudProcessor:
         height, width = input_frame.shape
         points = []
         k_matrix_inv = np.linalg.inv(k_matrix)
-        for v in range(0, height, 32):
-            for u in range(0, width, 32):
-                v_end = min(v + 32, height)
-                u_end = min(u + 32, width)
+        for v in range(0, height, PC_RESOLUTION):
+            for u in range(0, width, PC_RESOLUTION):
+                v_end = min(v + PC_RESOLUTION, height)
+                u_end = min(u + PC_RESOLUTION, width)
                 block = input_frame[v:v_end, u:u_end]
                 if np.isnan(block).all():
                     continue
