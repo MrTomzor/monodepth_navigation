@@ -1,6 +1,6 @@
 torch==2.10.0
 torchvision==0.25.0
-timm==0.6.13
+timm==1.0.19
 einops
 numpy
 scipy
