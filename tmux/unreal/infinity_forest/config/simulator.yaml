@@ -77,7 +77,7 @@ mrs_uav_flightforge_simulator:
 
 
 #  world_name: "forest"
-  world_name: "infinity_forest"
+  world_name: "infinite_forest"
 #  world_name: "service_tunnel"
 #  world_name: "cave"
 #  world_name: "eletric_towers"
