@@ -83,7 +83,3 @@ windows:
       panes:
         - sleep 5; ~/.i3/layout_manager.sh ./layout.json
 
-  - foxglove:
-      panes:
-        - ros2 launch foxglove_bridge foxglove_bridge_launch.xml port:=8765
-

@@ -168,7 +168,6 @@ class MonocularDepthEstimatorNode(Node):
         # self.last_scale_value = scale_value
         # scaled_depth_map_by_value = depth_map * scale_value
 
-
         masked_scaled_depth_map_by_map = self.put_mask_on_depth_map(scaled_depth_map_by_map, current_image.copy())
         cloud_msg_map = self.pointcloud.create_cloud_msg(
             masked_scaled_depth_map_by_map, current_time, self.camera.k_matrix, self.camera_frame
@@ -181,6 +180,19 @@ class MonocularDepthEstimatorNode(Node):
 
         self.pointcloud.publish_pointcloud(self.pub_pointcloud_map, cloud_msg_map)
         # self.pointcloud.publish_pointcloud(self.pub_pointcloud_value, cloud_msg_value)
+
+
+        # raw_matrix_msg = self.bridge.cv2_to_imgmsg(
+        #     masked_scaled_depth_map_by_map.astype(np.float32), encoding='32FC1'
+        # )
+        # raw_matrix_msg.header.stamp = current_time
+        # self.pub_raw_depth_matrix.publish(raw_matrix_msg)
+        #
+        # raw_scalar_msg = self.bridge.cv2_to_imgmsg(
+        #     masked_scaled_depth_map_by_value.astype(np.float32), encoding='32FC1'
+        # )
+        # raw_scalar_msg.header.stamp = current_time
+        # self.pub_raw_depth_scalar.publish(raw_scalar_msg)
 
         # inverse_depth_map_by_map = 1.0 / (scaled_depth_map_by_map + 1e-9)
         # colorized_depth_image_map = self.colorize_inverse_depth(inverse_depth_map_by_map)
